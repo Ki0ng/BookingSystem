@@ -9,12 +9,27 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host: env.SMTP_HOST,
       port: Number(env.SMTP_PORT),
-      secure: env.SMTP_PORT === '465',
+      secure: env.SMTP_PORT === '465', // true for 465, false for other ports (STARTTLS)
       auth: env.SMTP_USER && env.SMTP_PASS ? {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       } : undefined,
+      pool: true, // Use pooled connections for better performance
+      maxConnections: 5,
+      maxMessages: 100,
+      connectionTimeout: 10000, // 10 seconds timeout
     });
+
+    // Verify connection on startup
+    if (env.SMTP_USER && env.SMTP_PASS) {
+      this.transporter.verify((error) => {
+        if (error) {
+          logger.error('[MAIL] SMTP Verification Failed:', error);
+        } else {
+          logger.info('[MAIL] SMTP Server is ready to take messages');
+        }
+      });
+    }
   }
 
   sendOTP = async (to: string, code: string): Promise<void> => {
