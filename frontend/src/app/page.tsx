@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { PlatformFeedbackModal } from '@/shared/components/PlatformFeedbackModal';
 import { useHomePage } from '@/features/hotels';
 
@@ -65,7 +65,7 @@ const HomeContent = dynamic(() => Promise.resolve(function HomeContent() {
       />
     </div>
   );
-}), { 
+}), {
   ssr: false,
   loading: () => (
     <div className="min-h-screen bg-white flex items-center justify-center">

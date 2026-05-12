@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
   Hotel,
   Plus,
@@ -243,10 +243,10 @@ const ManagerRoomsContent = dynamic(() => Promise.resolve(function ManagerRoomsC
                     <div className="flex items-center gap-5">
                       <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 shadow-inner group-hover:scale-105 transition-transform duration-500 flex items-center justify-center relative">
                         {room.images?.[0]?.url ? (
-                          <img 
-                            src={room.images[0].url} 
-                            alt={room.room_type} 
-                            className="w-full h-full object-cover" 
+                          <img
+                            src={room.images[0].url}
+                            alt={room.room_type}
+                            className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="flex flex-col items-center gap-1">
@@ -295,7 +295,7 @@ const ManagerRoomsContent = dynamic(() => Promise.resolve(function ManagerRoomsC
                   </td>
                   <td className="p-7 text-right">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                      <button 
+                      <button
                         onClick={() => handleEdit(room)}
                         className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-blue-600 hover:shadow-xl transition-all"
                       >
@@ -326,15 +326,15 @@ const ManagerRoomsContent = dynamic(() => Promise.resolve(function ManagerRoomsC
                   <p className="text-blue-600 text-[10px] font-bold uppercase tracking-[0.3em] mb-1">{editingRoomId ? 'Modify Strategy' : 'New Configuration'}</p>
                   <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">{editingRoomId ? 'Edit Room Type' : 'Register Room Type'}</h3>
                 </div>
-                <button 
+                <button
                   type="button"
-                  onClick={() => resetForm()} 
+                  onClick={() => resetForm()}
                   className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:rotate-90 transition-all shadow-sm border border-slate-100 relative z-10"
                 >
                   <XCircle className="w-5 h-5" />
                 </button>
               </div>
-              
+
               {/* Body - Scrollable */}
               <div className="flex-1 overflow-y-auto p-10 space-y-8 custom-scrollbar">
                 <div className="grid grid-cols-2 gap-8">
@@ -401,17 +401,17 @@ const ManagerRoomsContent = dynamic(() => Promise.resolve(function ManagerRoomsC
 
               {/* Footer - Fixed */}
               <div className="p-8 bg-slate-50/80 border-t border-slate-100 flex gap-4 shrink-0">
-                <Button 
-                  variant="outline" 
-                  type="button" 
-                  onClick={() => resetForm()} 
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => resetForm()}
                   className="flex-1 h-14 rounded-2xl font-bold uppercase text-[10px] tracking-widest border-slate-200 text-slate-400 hover:bg-white hover:text-slate-900 transition-all"
                 >
                   Discard Changes
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={submitting} 
+                <Button
+                  type="submit"
+                  disabled={submitting}
                   className="flex-2 h-14 rounded-2xl font-bold uppercase text-[10px] tracking-widest bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-100 transition-all hover:scale-[1.02] active:scale-[0.98] px-10"
                 >
                   {submitting ? 'Processing...' : (editingRoomId ? 'Update Configuration' : 'Create Room Type')}
@@ -424,7 +424,7 @@ const ManagerRoomsContent = dynamic(() => Promise.resolve(function ManagerRoomsC
       )}
     </div>
   );
-}), { 
+}), {
   ssr: false,
   loading: () => (
     <div className="space-y-10">
