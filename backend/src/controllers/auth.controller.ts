@@ -36,8 +36,16 @@ export class AuthController {
     const user = req.user;
     
     if (user?.accessToken && user?.refreshToken) {
+      // For production (cross-domain), we send tokens via URL params
+      // The frontend login-success page will handle saving them
+      const redirectUrl = new URL(`${env.FRONTEND_URL}/login-success`);
+      redirectUrl.searchParams.append('accessToken', user.accessToken);
+      redirectUrl.searchParams.append('refreshToken', user.refreshToken);
+      
+      // Still set cookies for same-domain support if needed
       this.setCookies(res, user.accessToken, user.refreshToken);
-      res.redirect(`${env.FRONTEND_URL}/login-success`);
+      
+      res.redirect(redirectUrl.toString());
     } else {
       throw new Error('Authentication failed');
     }
