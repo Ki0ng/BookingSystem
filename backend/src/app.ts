@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import './config/passport.config';
@@ -16,11 +19,25 @@ import reviewRoutes from './routes/review.routes';
 
 const app = express();
 
-// Middlewares
+// Security Middlewares
+app.use(helmet());
 app.use(cors({
   origin: env.FRONTEND_URL,
   credentials: true,
 }));
+
+// Rate Limiting (100 requests per 15 minutes)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' }
+});
+app.use('/api', limiter);
+
+// Performance Middlewares
+app.use(compression());
 app.use(cookieParser());
 app.use(express.json());
 app.use(passport.initialize());
@@ -48,3 +65,4 @@ app.use('/api/reviews', reviewRoutes);
 app.use(errorHandler);
 
 export default app;
+

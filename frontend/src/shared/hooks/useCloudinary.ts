@@ -29,7 +29,6 @@ export const useCloudinary = () => {
     script.src = 'https://upload-widget.cloudinary.com/global/all.js';
     script.async = true;
     script.onload = () => {
-      console.log('✅ Cloudinary Widget Loaded');
       setLoaded(true);
     };
     script.onerror = () => console.error('❌ Failed to load Cloudinary Widget');

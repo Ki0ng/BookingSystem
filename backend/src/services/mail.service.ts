@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.config';
+import logger from '../utils/logger';
 
 export class MailService {
   private transporter: nodemailer.Transporter;
@@ -40,9 +41,9 @@ export class MailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`[MAIL] OTP sent to ${to}`);
+      logger.info(`[MAIL] OTP sent to ${to}`);
     } catch (error) {
-      console.error('[MAIL] Error sending email:', error);
+      logger.error('[MAIL] Error sending email:', error);
       throw new Error('Failed to send verification email');
     }
   };
@@ -87,9 +88,9 @@ export class MailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`[MAIL] Application result sent to ${to}`);
+      logger.info(`[MAIL] Application result sent to ${to}`);
     } catch (error) {
-      console.error('[MAIL] Error sending application result email:', error);
+      logger.error('[MAIL] Error sending application result email:', error);
     }
   };
 
@@ -119,9 +120,9 @@ export class MailService {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      console.log(`[MAIL] Password reset link sent to ${to}`);
+      logger.info(`[MAIL] Password reset link sent to ${to}`);
     } catch (error) {
-      console.error('[MAIL] Error sending password reset email:', error);
+      logger.error('[MAIL] Error sending password reset email:', error);
       throw new Error('Failed to send password reset email');
     }
   };

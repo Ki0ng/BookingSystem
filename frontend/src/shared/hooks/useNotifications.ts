@@ -24,7 +24,6 @@ export const useNotifications = (userId?: string) => {
     if (!socket || !userId) return;
 
     const handleUpdate = () => {
-      console.log('🔔 Real-time notification trigger received!');
       refetch();
     };
 

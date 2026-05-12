@@ -53,7 +53,6 @@ export default function AdminApprovals() {
     if (!socket) return;
 
     const handleNewApp = (app: ManagerApplication) => {
-      console.log('👑 New partner application received!', app);
       setApplications(prev => {
         if (prev.find(a => a.id === app.id)) return prev;
         return [{ ...app, isNew: true }, ...prev];
@@ -70,7 +69,6 @@ export default function AdminApprovals() {
     if (!confirm(`Are you sure you want to ${status.toLowerCase()} this application?`)) return;
     
     setSubmitting(id);
-    console.log(`📡 Sending ${status} to /admin/applications/${id}`);
     try {
       // Sửa URL: Chỉ gửi đến /applications/${id} và truyền status vào body
       await apiClient.patch(`/admin/applications/${id}`, { 

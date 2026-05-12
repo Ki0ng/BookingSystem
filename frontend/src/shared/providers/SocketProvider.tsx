@@ -55,7 +55,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     socketInstance.on('connect', () => {
       setConnected(true);
-      console.log('🔌 Socket connected:', socketInstance.id);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔌 Socket connected:', socketInstance.id);
+      }
 
       // Join relevant rooms
       if (user.role === 'ADMIN') {
@@ -69,7 +71,9 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     socketInstance.on('disconnect', () => {
       setConnected(false);
-      console.log('❌ Socket disconnected');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ Socket disconnected');
+      }
     });
 
     setSocket(socketInstance);

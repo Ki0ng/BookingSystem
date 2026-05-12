@@ -27,7 +27,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <HeroSection />
-      
+
       <StatsSection />
 
       <FeaturedHotels hotels={hotels} loading={hotelsLoading} />
@@ -44,11 +44,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <Testimonials 
-        reviews={platformReviews} 
-        loading={reviewsLoading} 
-        user={user} 
-        onOpenFeedback={() => setIsFeedbackOpen(true)} 
+      <Testimonials
+        reviews={platformReviews}
+        loading={reviewsLoading}
+        user={user}
+        onOpenFeedback={() => setIsFeedbackOpen(true)}
       />
 
       <ValueProp />

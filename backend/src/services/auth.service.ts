@@ -6,6 +6,7 @@ import { AuthResponse, GoogleProfile, ApplyManagerDTO, UpdateApplicationDTO } fr
 import { env } from '../config/env.config';
 import { MailService } from './mail.service';
 import { getIO } from '../config/socket.config';
+import logger from '../utils/logger';
 
 export class AuthService {
   private readonly jwtSecret = env.JWT_SECRET || 'super-secret';
@@ -193,18 +194,18 @@ export class AuthService {
   };
 
   updateApplicationStatus = async (applicationId: string, data: UpdateApplicationDTO): Promise<void> => {
-    console.log(`[AUTH_SERVICE] Fetching application: ${applicationId}`);
+    logger.info(`[AUTH_SERVICE] Fetching application: ${applicationId}`);
     const application = await prisma.managerApplication.findUnique({
       where: { id: applicationId },
       include: { user: true }
     });
 
     if (!application) {
-      console.error(`[AUTH_SERVICE] Application ${applicationId} NOT FOUND`);
+      logger.error(`[AUTH_SERVICE] Application ${applicationId} NOT FOUND`);
       throw new Error('Application not found');
     }
 
-    console.log(`[AUTH_SERVICE] Starting transaction for application: ${applicationId} (${data.status})`);
+    logger.info(`[AUTH_SERVICE] Starting transaction for application: ${applicationId} (${data.status})`);
 
     await prisma.$transaction(async (tx) => {
       // 1. Update application status

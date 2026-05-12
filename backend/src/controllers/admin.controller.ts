@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../config/db.config';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AuthService } from '../services/auth.service';
+import logger from '../utils/logger';
 
 const authService = new AuthService();
 
@@ -20,13 +21,13 @@ export class AdminController {
     const { id } = req.params;
     const { status, adminComment } = req.body; // status: APPROVED or REJECTED
 
-    console.log(`[ADMIN] Processing application ${id} with status ${status}`);
+    logger.info(`[ADMIN] Processing application ${id} with status ${status}`);
 
     try {
       await authService.updateApplicationStatus(id, { status, adminComment });
-      console.log(`[ADMIN] Successfully processed application ${id}`);
+      logger.info(`[ADMIN] Successfully processed application ${id}`);
     } catch (error: any) {
-      console.error(`[ADMIN] Error processing application ${id}:`, error.message);
+      logger.error(`[ADMIN] Error processing application ${id}:`, error);
       throw error;
     }
 

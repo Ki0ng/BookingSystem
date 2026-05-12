@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 
 import { env } from '../config/env.config';
 import { UserResponse } from '../types/auth.types';
+import logger from '../utils/logger';
 
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
   const token = req.cookies?.accessToken || req.headers.authorization?.split(' ')[1];
@@ -14,11 +15,11 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as UserResponse;
-    console.log(`[AUTH] User authenticated: ${decoded.userId} (Role: ${decoded.role})`);
+    logger.info(`[AUTH] User authenticated: ${decoded.userId} (Role: ${decoded.role})`);
     req.user = decoded;
     next();
   } catch (error) {
-    console.error(`[AUTH] Token verification failed:`, (error as any).message);
+    logger.error(`[AUTH] Token verification failed:`, error);
     res.status(401).json({ success: false, message: 'Invalid or expired access token.' });
     return;
   }
