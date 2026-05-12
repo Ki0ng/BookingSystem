@@ -36,12 +36,21 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
-    // Handle global errors here (e.g. 401 Unauthorized)
-    if (error.response?.status === 401) {
-      // Logic logout hoặc refresh token
+    const status = error.response?.status;
+
+    // Handle global errors here
+    if (status === 401) {
+      // 🚀 Silent fail for profile checks or expected unauthorized states
+      // We don't log to console here to keep it clean
+    } else if (status && status >= 500) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('🔥 Server Error:', error.response?.data || error.message);
+      }
     }
+    
     return Promise.reject(error);
   }
 );
+
 
 export default apiClient;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { authService } from '../services/auth.service';
+import { authService } from '@/features/auth/services/auth.service';
 import { useAuth } from './use-auth';
 import { ApiErrorResponse } from '@/shared/types';
 

@@ -9,11 +9,9 @@ import {
   EyeOff,
   Reply,
   Search,
-  MoreVertical,
   ChevronRight,
   Trash2,
   ChevronDown,
-  Star
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 import { reviewService } from '@/features/reviews';
@@ -59,8 +57,8 @@ const Dropdown = ({ label, value, options, onChange, activeColor = 'text-slate-9
                   setIsOpen(false);
                 }}
                 className={`w-full px-6 py-3 text-[10px] font-bold uppercase tracking-widest text-left transition-all ${(opt.value === '' && value.includes('All')) || (opt.label === value) || (value.includes(opt.label))
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-600 hover:bg-blue-50 hover:text-blue-600'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-600 hover:bg-blue-50 hover:text-blue-600'
                   }`}
               >
                 {opt.label}
@@ -463,17 +461,16 @@ export default function ManagerReviewsPage() {
           >
             <ChevronRight className="w-5 h-5 rotate-180 group-hover:-translate-x-1 transition-transform" />
           </button>
-          
+
           <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/50 shadow-xl shadow-slate-200/10">
             {[...Array(pagination.pages)].map((_, i) => (
               <button
                 key={i + 1}
                 onClick={() => setFilters({ ...filters, page: i + 1 })}
-                className={`w-10 h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${
-                  filters.page === i + 1 
-                    ? 'bg-slate-900 text-white shadow-xl shadow-slate-400/20' 
+                className={`w-10 h-10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${filters.page === i + 1
+                    ? 'bg-slate-900 text-white shadow-xl shadow-slate-400/20'
                     : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 {String(i + 1).padStart(2, '0')}
               </button>

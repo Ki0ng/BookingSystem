@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { hotelService } from '@/features/hotels/services/hotel.service';
 import { Hotel } from '@/shared/types';
 
-/**
- * Hook to handle hotel listing, filtering, and sorting logic
- */
 export const useHotelListing = () => {
   const searchParams = useSearchParams();
   const [maxPrice, setMaxPrice] = useState(5000);
@@ -30,8 +27,8 @@ export const useHotelListing = () => {
   const flexibility = searchParams.get('flexibility') ? Number(searchParams.get('flexibility')) : 0;
   const guests = searchParams.get('guests') ? Number(searchParams.get('guests')) : undefined;
 
-  const { data: hotels = [], isLoading: loading } = useQuery<Hotel[]>({
-    queryKey: ['hotels', 'list', { location, checkIn, checkOut, flexibility, guests, maxPrice: debouncedMaxPrice, sortBy, selectedAmenities }],
+  const { data: rawHotels = [], isLoading: loading } = useQuery<Hotel[]>({
+    queryKey: ['hotels', 'list', { location, checkIn, checkOut, flexibility, guests }],
     queryFn: async () => {
       const res = await hotelService.getHotels({
         location,
@@ -40,29 +37,32 @@ export const useHotelListing = () => {
         guests,
         flexibility
       });
-
-      let fetchedHotels: Hotel[] = res.data || [];
-
-      // Filter by price on frontend if API doesn't support it fully
-      fetchedHotels = fetchedHotels.filter(h => {
-        if (!h.rooms || h.rooms.length === 0) return true; // Show hotels without rooms
-        const minRoomPrice = Math.min(...h.rooms.map(r => r.base_price));
-        return minRoomPrice <= maxPrice;
-      });
-
-      // Sorting Logic
-      const sorted = [...fetchedHotels];
-      if (sortBy === 'Price: Low to High') {
-        sorted.sort((a, b) => (a.rooms?.[0]?.base_price || 0) - (b.rooms?.[0]?.base_price || 0));
-      } else if (sortBy === 'Price: High to Low') {
-        sorted.sort((a, b) => (b.rooms?.[0]?.base_price || 0) - (a.rooms?.[0]?.base_price || 0));
-      } else if (sortBy === 'Top Rated') {
-        sorted.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
-      }
-
-      return sorted;
+      return res.data || [];
     },
   });
+
+  const hotels = useMemo(() => {
+    let result = [...rawHotels];
+
+    // Filter by price
+    result = result.filter(h => {
+      if (!h.rooms || h.rooms.length === 0) return true;
+      const minRoomPrice = Math.min(...h.rooms.map(r => r.base_price));
+      return minRoomPrice <= debouncedMaxPrice;
+    });
+
+    // Sorting
+    if (sortBy === 'Price: Low to High') {
+      result.sort((a, b) => (a.rooms?.[0]?.base_price || 0) - (b.rooms?.[0]?.base_price || 0));
+    } else if (sortBy === 'Price: High to Low') {
+      result.sort((a, b) => (b.rooms?.[0]?.base_price || 0) - (a.rooms?.[0]?.base_price || 0));
+    } else if (sortBy === 'Top Rated') {
+      result.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
+    }
+
+    return result;
+  }, [rawHotels, debouncedMaxPrice, sortBy]);
+
 
   const clearFilters = () => {
     setMaxPrice(5000);

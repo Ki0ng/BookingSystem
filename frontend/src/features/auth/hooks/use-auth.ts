@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { authService } from '../services/auth.service';
+import { authService } from '@/features/auth/services/auth.service';
 import { useAuthContext } from '@/shared/providers/AuthProvider';
 import { ApiErrorResponse } from '@/shared/types';
 
@@ -48,7 +48,7 @@ export const useAuth = () => {
     try {
       const res = await authService.verifyOTP(email, code);
       const userData = res.user;
-      
+
       if (userData) {
         // 🚀 Store tokens in localStorage for the API interceptor
         if (res.accessToken) localStorage.setItem('accessToken', res.accessToken);
@@ -56,7 +56,7 @@ export const useAuth = () => {
 
         // 🚀 Update React Query cache
         queryClient.setQueryData(['auth', 'profile'], userData);
-        
+
         // Direct redirect based on role
         if (userData.role === 'ADMIN') {
           router.push('/admin/dashboard');

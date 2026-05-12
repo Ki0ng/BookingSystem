@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { authService } from '../services/auth.service';
+import { authService } from '@/features/auth/services/auth.service';
 import { User } from '@/shared/types';
 import { validators, validationMessages } from '@/shared/utils/validation';
 

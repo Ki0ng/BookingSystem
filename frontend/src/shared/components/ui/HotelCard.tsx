@@ -36,18 +36,20 @@ export const HotelCard = ({
     const baseUrl = `/hotels/${id}`;
     if (!searchParams) return baseUrl;
     
+    // Create params from object, handling both single values and arrays
     const params = new URLSearchParams();
     Object.entries(searchParams).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         value.forEach(v => params.append(key, v));
-      } else if (value !== undefined) {
-        params.append(key, value);
+      } else if (value !== undefined && value !== null) {
+        params.append(key, String(value));
       }
     });
     
     const queryString = params.toString();
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   };
+
 
   if (variant === 'list') {
     return (

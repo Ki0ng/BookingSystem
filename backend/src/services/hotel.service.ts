@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Hotel } from '@prisma/client';
 import { redisUtil } from '../utils/redis.util';
 import logger from '../utils/logger';
 
@@ -98,10 +98,14 @@ export const hotelService = {
       }
       logger.info(`[SEARCH] Total windows generated: ${windows.length}`);
 
-      const hotelsWithAvailability = await Promise.all(hotels.map(async (hotel) => {
-        // Check if ANY window has availability for ANY room
-        const hasAvailabilityInAnyWindow = await Promise.any(windows.map(async (window) => {
-          const roomsWithAvailability = await Promise.all(hotel.rooms.map(async (room) => {
+      const finalHotels: Hotel[] = [];
+
+      for (const hotel of hotels) {
+        let isHotelAvailable = false;
+
+        // Check each flexibility window
+        for (const window of windows) {
+          const roomAvailability = await Promise.all(hotel.rooms.map(async (room) => {
             const overlappingBookings = await prisma.booking.count({
               where: {
                 roomId: room.id,
@@ -110,23 +114,26 @@ export const hotelService = {
                 checkOut: { gt: window.in }
               }
             });
-            return room.quantity - overlappingBookings > 0;
+            return (room.quantity - overlappingBookings) > 0;
           }));
-          
-          if (roomsWithAvailability.some(a => a)) return true;
-          throw new Error("No availability in this window");
-        })).catch(() => false);
 
-        if (!hasAvailabilityInAnyWindow) {
+          if (roomAvailability.some(available => available)) {
+            isHotelAvailable = true;
+            break; // Found a valid window, no need to check others
+          }
+        }
+
+        if (isHotelAvailable) {
+          finalHotels.push(hotel as any);
+        } else {
           logger.info(`[SEARCH] Hotel ${hotel.name} filtered out - no availability in any window`);
         }
-        return hasAvailabilityInAnyWindow ? hotel : null;
-      }));
+      }
 
-      const finalHotels = hotelsWithAvailability.filter(h => h !== null);
       logger.info(`[SEARCH] Found ${finalHotels.length} hotels after availability check`);
       return finalHotels;
     }
+
 
     return hotels;
   },

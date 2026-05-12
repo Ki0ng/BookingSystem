@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import logger from '@/utils/logger';
+import logger from '../utils/logger';
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   let statusCode = err.status || 500;
@@ -14,11 +14,17 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
     message = 'Record not found.';
   }
 
-  logger.error(`[${req.method}] ${req.path} >> StatusCode: ${statusCode}, Message: ${message}`);
-
-  if (statusCode === 500) {
-    logger.error(err.stack);
+  // 🚀 Intelligent Logging
+  const logMessage = `[${req.method}] ${req.path} >> StatusCode: ${statusCode} >> ${message}`;
+  
+  if (statusCode >= 500) {
+    logger.error(logMessage, err);
+  } else if (statusCode >= 400) {
+    logger.warn(logMessage);
+  } else {
+    logger.info(logMessage);
   }
+
 
   res.status(statusCode).json({
     success: false,
