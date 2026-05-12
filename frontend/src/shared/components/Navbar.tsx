@@ -155,7 +155,9 @@ export const Navbar = () => {
                         sizes="32px"
                         onError={() => {
                           // Nếu ảnh lỗi, chúng ta có thể xóa avatar để nó hiển thị chữ cái đầu
-                          console.log("Avatar failed to load, falling back to initial");
+                          if (process.env.NODE_ENV === 'development') {
+                            console.log("Avatar failed to load, falling back to initial");
+                          }
                         }}
                       />
                     ) : (user.name?.[0] || 'U')}

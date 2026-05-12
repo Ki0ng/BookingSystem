@@ -36,7 +36,9 @@ export const useHotelReviews = (hotelId: string) => {
     socket.emit('join_hotel', hotelId);
 
     const handleUpdate = () => {
-      console.log('🔄 Real-time hotel review update triggered');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Real-time hotel review update triggered');
+      }
       refetch();
     };
 
