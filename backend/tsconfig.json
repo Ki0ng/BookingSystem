@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "ignoreDeprecations": "5.0",
     "target": "es2022",
     "module": "commonjs",
     "outDir": "./dist",
@@ -10,8 +11,13 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     }
   },
-  "include": ["src/**/*", "prisma/**/*"]
+  "include": [
+    "src/**/*",
+    "prisma/**/*"
+  ]
 }
