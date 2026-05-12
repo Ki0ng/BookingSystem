@@ -7,28 +7,32 @@ export class RedisUtil {
   private isConnecting: boolean = false;
 
   constructor() {
-    this.client = createClient({
-      url: env.REDIS_URL || 'redis://127.0.0.1:6379',
-      socket: {
-        reconnectStrategy: (retries) => {
-          if (retries > 3) {
-            logger.warn('⚠️ Redis: Connection failed. Operating without cache.');
-            return false; // Stop retrying
+    try {
+      this.client = createClient({
+        url: env.REDIS_URL || 'redis://127.0.0.1:6379',
+        socket: {
+          reconnectStrategy: (retries) => {
+            if (retries > 3) {
+              logger.warn('⚠️ Redis: Connection failed. Operating without cache.');
+              return false; // Stop retrying
+            }
+            return Math.min(retries * 500, 2000);
           }
-          return Math.min(retries * 500, 2000);
         }
-      }
-    });
+      });
 
-    this.client.on('error', (err) => {
-      // Suppress noisy error logs if we are not connected
-      if (this.client.isOpen) {
-        logger.error('❌ Redis Error: ' + err);
-      }
-    });
-    this.client.on('connect', () => logger.info('🚀 Redis: Connecting to server...'));
-    this.client.on('ready', () => logger.info('✅ Redis: Ready and Connected!'));
-    this.client.on('end', () => logger.warn('⚠️ Redis: Connection closed'));
+      this.client.on('error', (err) => {
+        if (this.client?.isOpen) {
+          logger.error('❌ Redis Error: ' + err);
+        }
+      });
+      this.client.on('connect', () => logger.info('🚀 Redis: Connecting to server...'));
+      this.client.on('ready', () => logger.info('✅ Redis: Ready and Connected!'));
+      this.client.on('end', () => logger.warn('⚠️ Redis: Connection closed'));
+    } catch (err) {
+      logger.error('❌ Redis: Initialization failed. Please check your REDIS_URL. Server will run without Redis.');
+      this.client = null as any;
+    }
   }
 
   async connect() {
