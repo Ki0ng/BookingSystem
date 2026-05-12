@@ -20,9 +20,9 @@ import { Skeleton } from '@/shared/components/ui/Skeleton';
 import { useManagerRooms } from '@/features/hotels';
 import { createPortal } from 'react-dom';
 
-import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 
-function ManagerRoomsContent() {
+const ManagerRoomsContent = dynamic(() => Promise.resolve(function ManagerRoomsContent() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -424,21 +424,24 @@ function ManagerRoomsContent() {
       )}
     </div>
   );
-}
+}), { 
+  ssr: false,
+  loading: () => (
+    <div className="space-y-10">
+      <Skeleton className="h-20 w-full rounded-2xl" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Skeleton className="h-32 rounded-[2rem]" />
+        <Skeleton className="h-32 rounded-[2rem]" />
+        <Skeleton className="h-32 rounded-[2rem]" />
+      </div>
+      <Skeleton className="h-96 rounded-[2rem]" />
+    </div>
+  )
+});
 
 export default function ManagerRoomsPage() {
   return (
-    <Suspense fallback={
-      <div className="space-y-10">
-        <Skeleton className="h-20 w-full rounded-2xl" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Skeleton className="h-32 rounded-[2rem]" />
-          <Skeleton className="h-32 rounded-[2rem]" />
-          <Skeleton className="h-32 rounded-[2rem]" />
-        </div>
-        <Skeleton className="h-96 rounded-[2rem]" />
-      </div>
-    }>
+    <Suspense fallback={null}>
       <ManagerRoomsContent />
     </Suspense>
   );
