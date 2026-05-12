@@ -1,0 +1,210 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum RoomStatus {
+  AVAILABLE
+  UNAVAILABLE
+  MAINTENANCE
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name                String?
+  phone               String?
+  password_hash       String?
+  googleId            String?   @unique
+  avatar              String?
+  verificationCode    String?
+  verificationCodeExpires DateTime?
+  role                Role      @default(USER)
+  bookings      Booking[]
+  reviews       Review[]
+  managerApplication ManagerApplication?
+  hotels        Hotel[]
+  notifications Notification[]
+  reviewReplies ReviewReply[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model ManagerApplication {
+  id                String            @id @default(uuid())
+  userId            String            @unique
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotelName         String
+  hotelAddress      String
+  hotelDescription  String?           @default("")
+  businessLicense   String?           // Link ảnh/file từ Cloudinary
+  phone             String
+  status            ApplicationStatus @default(PENDING)
+  adminComment      String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model Hotel {
+  id             String            @id @default(uuid())
+  ownerId        String
+  owner          User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name           String
+  location_lat   Float             // Representing point(lat, lng)
+  location_lng   Float             // Representing point(lat, lng)
+  address        String
+  description    String
+  average_rating Float             @default(0)
+  review_count   Int               @default(0)
+  status         ApplicationStatus @default(PENDING)
+  rooms          Room[]
+  images         Image[]
+  reviews        Review[]
+  amenities      Amenity[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model Room {
+  id         String     @id @default(uuid())
+  hotelId    String
+  hotel      Hotel      @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  room_type  String     
+  base_price Float
+  quantity   Int        @default(1)
+  capacity   Int        @default(2)
+  status     RoomStatus @default(AVAILABLE)
+  metadata   Json       // Represents jsonb
+  version    Int        @default(1) // optimistic_lock
+  bookings   Booking[]
+  images     Image[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([hotelId])
+}
+
+model Booking {
+  id           String        @id @default(uuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomId       String
+  room         Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  checkIn      DateTime      @db.Date
+  checkOut     DateTime      @db.Date
+  totalPrice   Float
+  status       BookingStatus @default(PENDING)
+  version      Int           @default(1) // optimistic_lock
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([roomId, checkIn, checkOut])
+}
+
+model Transaction {
+  id                  String            @id @default(uuid())
+  bookingId           String
+  booking             Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  payment_gateway_ref String?
+  amount              Float
+  status              TransactionStatus @default(PENDING)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+
+model Image {
+  id        String   @id @default(uuid())
+  url       String   // Link ảnh từ Cloudinary/S3
+  hotelId   String?
+  hotel     Hotel?   @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  roomId    String?
+  room      Room?    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      // 1-5 sao
+  comment   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hotelId   String?
+  hotel     Hotel?   @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  status    ReviewStatus @default(PENDING)
+  isHidden  Boolean  @default(false)
+  replies   ReviewReply[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, hotelId])
+  @@index([rating])
+  @@index([status])
+  @@index([hotelId])
+  @@index([createdAt])
+}
+
+model ReviewReply {
+  id        String   @id @default(uuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  managerId String
+  manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Amenity {
+  id     String @id @default(uuid())
+  name   String @unique // "Wifi", "Bể bơi", "Điều hòa"
+  hotels Hotel[] // Quan hệ n-n (Nhiều khách sạn có nhiều tiện ích)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
