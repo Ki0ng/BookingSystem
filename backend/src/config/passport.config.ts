@@ -1,16 +1,17 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { env } from './env.config';
 import { AuthService } from '../services/auth.service';
 
 const authService = new AuthService();
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
   passport.use(
     new GoogleStrategy(
       {
-        clientID: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        callbackURL: process.env.GOOGLE_CALLBACK_URL!,
+        clientID: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        callbackURL: env.GOOGLE_CALLBACK_URL || '',
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -27,6 +28,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       }
     )
   );
+  console.log('🚀 Google Strategy initialized successfully');
 } else {
   console.log('⚠️ Google OAuth credentials missing, Google login disabled.');
 }
