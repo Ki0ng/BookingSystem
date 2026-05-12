@@ -4,28 +4,32 @@ import { AuthService } from '../services/auth.service';
 
 const authService = new AuthService();
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL!,
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const result = await authService.googleLogin(profile);
-        return done(null, {
-          userId: result.user.userId,
-          role: result.user.role,
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-        });
-      } catch (error: any) {
-        return done(error, undefined);
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        callbackURL: process.env.GOOGLE_CALLBACK_URL!,
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const result = await authService.googleLogin(profile);
+          return done(null, {
+            userId: result.user.userId,
+            role: result.user.role,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+          });
+        } catch (error: any) {
+          return done(error, undefined);
+        }
       }
-    }
-  )
-);
+    )
+  );
+} else {
+  console.log('⚠️ Google OAuth credentials missing, Google login disabled.');
+}
 
 // We don't use sessions since we use JWT, but passport might need these
 passport.serializeUser((user: any, done) => {
