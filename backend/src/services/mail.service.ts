@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { env } from '../config/env.config';
 import logger from '../utils/logger';
 
@@ -6,19 +7,22 @@ export class MailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
+    const mailConfig = {
       host: env.SMTP_HOST,
       port: Number(env.SMTP_PORT),
-      secure: env.SMTP_PORT === '465', // true for 465, false for other ports (STARTTLS)
+      secure: env.SMTP_PORT === '465',
       auth: env.SMTP_USER && env.SMTP_PASS ? {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       } : undefined,
-      pool: true, // Use pooled connections for better performance
+      pool: true,
       maxConnections: 5,
       maxMessages: 100,
-      connectionTimeout: 10000, // 10 seconds timeout
-    });
+      connectionTimeout: 10000,
+      family: 4, // Force IPv4
+    };
+
+    this.transporter = nodemailer.createTransport(mailConfig as any);
 
     // Verify connection on startup
     if (env.SMTP_USER && env.SMTP_PASS) {
