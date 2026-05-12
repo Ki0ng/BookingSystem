@@ -8,7 +8,11 @@ export const reviewController = {
     const validatedData = createReviewSchema.parse(req.body);
     const userId = (req.user as any).userId;
 
-    const review = await reviewService.createReview(userId, { ...validatedData, hotelId: validatedData.hotelId || null });
+    const review = await reviewService.createReview(userId, {
+      rating: validatedData.rating,
+      comment: validatedData.comment,
+      hotelId: validatedData.hotelId || null
+    });
 
     res.status(201).json({
       success: true,
