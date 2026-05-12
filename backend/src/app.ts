@@ -21,9 +21,25 @@ const app = express();
 
 // Security Middlewares
 app.use(helmet());
+
+// Improved CORS configuration
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  env.FRONTEND_URL.endsWith('/') ? env.FRONTEND_URL.slice(0, -1) : `${env.FRONTEND_URL}/`,
+  'http://localhost:3000' // Always allow local dev
+];
+
 app.use(cors({
-  origin: env.FRONTEND_URL,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
 }));
 
 // Rate Limiting (100 requests per 15 minutes)

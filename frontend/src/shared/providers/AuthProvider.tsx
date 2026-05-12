@@ -30,7 +30,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const res = await authService.getProfile();
         return res.user || res.data || null;
-      } catch (err) {
+      } catch (err: any) {
+        console.error('❌ Failed to fetch user profile:', err.response?.data || err.message);
         return null;
       }
     },
