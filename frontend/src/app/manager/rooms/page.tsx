@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
   Hotel,
   Plus,
@@ -20,7 +20,7 @@ import { Skeleton } from '@/shared/components/ui/Skeleton';
 import { useManagerRooms } from '@/features/hotels';
 import { createPortal } from 'react-dom';
 
-export default function ManagerRoomsPage() {
+function ManagerRoomsContent() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -312,7 +312,8 @@ export default function ManagerRoomsPage() {
             </tbody>
           </table>
         </div>
-      </div>      {/* Add Room Modal - Elite Version */}
+      </div>
+      {/* Add Room Modal - Elite Version */}
       {mounted && showAddForm && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500 border border-white/20">
@@ -421,5 +422,13 @@ export default function ManagerRoomsPage() {
         document.body
       )}
     </div>
+  );
+}
+
+export default function ManagerRoomsPage() {
+  return (
+    <Suspense fallback={<div className="p-10">Loading Room Management...</div>}>
+      <ManagerRoomsContent />
+    </Suspense>
   );
 }

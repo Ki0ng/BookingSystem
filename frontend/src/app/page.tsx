@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { PlatformFeedbackModal } from '@/shared/components/PlatformFeedbackModal';
 import { useHomePage } from '@/features/hotels';
 
@@ -26,7 +26,9 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <HeroSection />
+      <Suspense fallback={<div className="h-[90vh] bg-slate-900 animate-pulse" />}>
+        <HeroSection />
+      </Suspense>
 
       <StatsSection />
 
