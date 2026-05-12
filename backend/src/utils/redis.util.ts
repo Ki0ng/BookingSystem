@@ -37,7 +37,7 @@ export class RedisUtil {
 
   async connect() {
     if (this.isConnecting || this.client.isOpen) return;
-    
+
     this.isConnecting = true;
     try {
       logger.info('🔍 Redis: Attempting to connect...');
