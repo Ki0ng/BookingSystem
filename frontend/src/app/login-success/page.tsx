@@ -15,15 +15,24 @@ function LoginSuccessContent() {
     const refreshToken = searchParams.get('refreshToken');
 
     if (accessToken && refreshToken) {
+      console.log('🔑 Tokens found in URL, saving to localStorage...');
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      refreshProfile();
+      
+      // Small delay to ensure localStorage is ready
+      setTimeout(() => {
+        console.log('🔄 Refreshing profile...');
+        refreshProfile();
+      }, 100);
     }
   }, [searchParams, refreshProfile]);
 
   useEffect(() => {
+    console.log('📊 Auth State - User:', !!user, 'Loading:', loading);
+    
     if (!loading) {
       if (user) {
+        console.log('✅ User authenticated, redirecting to dashboard...');
         if (user.role === 'ADMIN') {
           router.push('/admin/dashboard');
         } else if (user.role === 'MANAGER') {
@@ -32,11 +41,22 @@ function LoginSuccessContent() {
           router.push('/');
         }
       } else if (!searchParams.get('accessToken')) {
-        // Only redirect to login if we don't have tokens in the URL
+        console.log('❌ No user and no tokens in URL, going to login...');
         router.push('/login');
       }
     }
   }, [user, loading, router, searchParams]);
+
+  // Fallback timeout: if stuck for 8 seconds, go to login
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!user && !loading) {
+        console.log('⏰ Timeout reached, redirecting to login...');
+        router.push('/login?error=timeout');
+      }
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [user, loading, router]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-24">
