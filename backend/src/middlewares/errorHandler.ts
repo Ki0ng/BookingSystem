@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import logger from '../utils/logger';
+import logger from '@/utils/logger';
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   let statusCode = err.status || 500;
@@ -14,13 +14,16 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
     message = 'Record not found.';
   }
 
-  // Log error with stack trace using improved Winston logger
-  logger.error(`[${req.method}] ${req.path} >> ${message}`, err);
+  logger.error(`[${req.method}] ${req.path} >> StatusCode: ${statusCode}, Message: ${message}`);
+
+  if (statusCode === 500) {
+    logger.error(err.stack);
+  }
 
   res.status(statusCode).json({
     success: false,
-    message,
+    status: statusCode,
+    message: message,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 };
-

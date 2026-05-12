@@ -61,6 +61,7 @@ export const HotelCard = ({
             src={image} 
             alt={name} 
             fill
+            sizes="(max-width: 768px) 100vw, 320px"
             className="object-cover group-hover:scale-110 transition-transform duration-1000" 
           />
           <div className="absolute top-5 left-5 px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-[9px] font-bold uppercase tracking-widest shadow-sm">
@@ -126,6 +127,7 @@ export const HotelCard = ({
           src={image}
           alt={name}
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover group-hover:scale-110 transition-transform duration-1000"
         />
         <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[9px] font-bold text-blue-600 shadow-sm flex items-center tracking-widest">
