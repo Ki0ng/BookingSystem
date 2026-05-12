@@ -12,7 +12,9 @@ import { Testimonials } from './home/components/Testimonials';
 import { ValueProp } from './home/components/ValueProp';
 import { FooterCTA } from './home/components/FooterCTA';
 
-export default function HomePage() {
+import { Suspense } from 'react';
+
+function HomeContent() {
   const {
     user,
     isFeedbackOpen,
@@ -62,5 +64,15 @@ export default function HomePage() {
         onSuccess={() => refetchReviews()}
       />
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+    </div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
