@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { asyncHandler } from '../utils/asyncHandler';
 import { env } from '../config/env.config';
-import prisma from '../config/db.config';
 
 const authService = new AuthService();
 
@@ -15,14 +14,14 @@ export class AuthController {
 
   verifyOTP = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { email, code } = req.body;
-    const result = await authService.verifyOTP(email, code);
-    this.setCookies(res, result.accessToken, result.refreshToken);
+    const authTokens = await authService.verifyOTP(email, code);
+    this.setCookies(res, authTokens.accessToken, authTokens.refreshToken);
     res.status(200).json({ 
       success: true, 
       message: 'Logged in successfully', 
-      user: result.user,
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken
+      user: authTokens.user,
+      accessToken: authTokens.accessToken,
+      refreshToken: authTokens.refreshToken
     });
   });
 
@@ -33,17 +32,17 @@ export class AuthController {
   });
 
   googleCallback = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const user = req.user;
+    const googleUserData = req.user;
     
-    if (user?.accessToken && user?.refreshToken) {
+    if (googleUserData?.accessToken && googleUserData?.refreshToken) {
       // For production (cross-domain), we send tokens via URL params
       // The frontend login-success page will handle saving them
       const redirectUrl = new URL(`${env.FRONTEND_URL}/login-success`);
-      redirectUrl.searchParams.append('accessToken', user.accessToken);
-      redirectUrl.searchParams.append('refreshToken', user.refreshToken);
+      redirectUrl.searchParams.append('accessToken', googleUserData.accessToken);
+      redirectUrl.searchParams.append('refreshToken', googleUserData.refreshToken);
       
       // Still set cookies for same-domain support if needed
-      this.setCookies(res, user.accessToken, user.refreshToken);
+      this.setCookies(res, googleUserData.accessToken, googleUserData.refreshToken);
       
       res.redirect(redirectUrl.toString());
     } else {
@@ -53,17 +52,8 @@ export class AuthController {
 
   getProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const userId = (req.user as any).userId;
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-
-    if (!user) {
-      res.status(404).json({ success: false, message: 'User not found' });
-      return;
-    }
-
-    // console.log('Fetched user profile:', user);
-    res.status(200).json({ success: true, user });
+    const userProfile = await authService.getProfile(userId);
+    res.status(200).json({ success: true, user: userProfile });
   });
 
   updateProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -83,8 +73,8 @@ export class AuthController {
 
   listApplications = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { status } = req.query;
-    const applications = await authService.listApplications(status as any);
-    res.status(200).json({ success: true, data: applications });
+    const managerApplications = await authService.listApplications(status as any);
+    res.status(200).json({ success: true, data: managerApplications });
   });
 
   updateApplicationStatus = asyncHandler(async (req: Request, res: Response): Promise<void> => {

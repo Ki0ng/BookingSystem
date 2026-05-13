@@ -32,12 +32,12 @@ export const reviewController = {
     const validatedQuery = reviewQuerySchema.parse(req.query);
     const user = req.user ? { id: (req.user as any).userId, role: (req.user as any).role } : undefined;
 
-    const result = await reviewService.getHotelReviews(hotelId, validatedQuery, user);
+    const paginatedReviewsData = await reviewService.getHotelReviews(hotelId, validatedQuery, user);
 
     res.json({
       success: true,
-      data: result.reviews,
-      pagination: result.pagination
+      data: paginatedReviewsData.reviews,
+      pagination: paginatedReviewsData.pagination
     });
   }),
 

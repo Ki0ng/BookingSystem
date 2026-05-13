@@ -14,7 +14,7 @@ export class MailService {
     }
   }
 
-  private async sendViaBrevo(to: string, subject: string, html: string): Promise<void> {
+  private async sendViaBrevo(recipientEmail: string, subject: string, html: string): Promise<void> {
     if (!this.apiKey) {
       logger.error('[MAIL] Cannot send email: API Key missing');
       throw new Error('Email service configuration missing');
@@ -38,32 +38,32 @@ export class MailService {
         },
         body: JSON.stringify({
           sender: { name: fromName, email: fromEmail },
-          to: [{ email: to }],
+          to: [{ email: recipientEmail }],
           subject: subject,
           htmlContent: html,
         }),
       });
 
-      const data = await response.json();
+      const brevoResponse = await response.json();
 
       if (!response.ok) {
-        logger.error('[MAIL] Brevo API Error:', data);
-        throw new Error(data.message || 'Failed to send email via Brevo');
+        logger.error('[MAIL] Brevo API Error:', brevoResponse);
+        throw new Error(brevoResponse.message || 'Failed to send email via Brevo');
       }
 
-      logger.info(`[MAIL] Email sent successfully to ${to} via Brevo. MessageID: ${data.messageId}`);
+      logger.info(`[MAIL] Email sent successfully to ${recipientEmail} via Brevo. MessageID: ${brevoResponse.messageId}`);
     } catch (error: any) {
       console.error('🔥 [MAIL_BREVO_ERROR]:', error);
       logger.error('[MAIL] Error sending email via Brevo:', {
         message: error.message,
-        to,
+        recipientEmail,
         subject
       });
       throw new Error('Failed to send verification email');
     }
   }
 
-  sendOTP = async (to: string, code: string): Promise<void> => {
+  sendOTP = async (recipientEmail: string, code: string): Promise<void> => {
     const subject = 'Your Elite Booking Verification Code';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
@@ -81,10 +81,10 @@ export class MailService {
       </div>
     `;
 
-    await this.sendViaBrevo(to, subject, html);
+    await this.sendViaBrevo(recipientEmail, subject, html);
   };
 
-  sendApplicationResult = async (to: string, status: 'APPROVED' | 'REJECTED', comment?: string): Promise<void> => {
+  sendApplicationResult = async (recipientEmail: string, status: 'APPROVED' | 'REJECTED', comment?: string): Promise<void> => {
     const isApproved = status === 'APPROVED';
     const subject = isApproved
       ? 'Congratulations! Your Manager Application is Approved'
@@ -118,13 +118,13 @@ export class MailService {
     `;
 
     try {
-      await this.sendViaBrevo(to, subject, html);
+      await this.sendViaBrevo(recipientEmail, subject, html);
     } catch (error) {
       // Non-critical if application result fails to send
     }
   };
 
-  sendPasswordReset = async (to: string, resetUrl: string): Promise<void> => {
+  sendPasswordReset = async (recipientEmail: string, resetUrl: string): Promise<void> => {
     const subject = 'Reset Your Elite Booking Password';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
@@ -144,6 +144,6 @@ export class MailService {
       </div>
     `;
 
-    await this.sendViaBrevo(to, subject, html);
+    await this.sendViaBrevo(recipientEmail, subject, html);
   };
 }

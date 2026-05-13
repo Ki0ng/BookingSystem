@@ -21,15 +21,15 @@ export class RedisUtil {
         }
       });
 
-      this.client.on('error', (err) => {
+      this.client.on('error', (redisError) => {
         if (this.client?.isOpen) {
-          logger.error('❌ Redis Error: ' + err);
+          logger.error('❌ Redis Error: ' + redisError);
         }
       });
       this.client.on('connect', () => logger.info('🚀 Redis: Connecting to server...'));
       this.client.on('ready', () => logger.info('✅ Redis: Ready and Connected!'));
       this.client.on('end', () => logger.warn('⚠️ Redis: Connection closed'));
-    } catch (err) {
+    } catch (redisError) {
       logger.error('❌ Redis: Initialization failed. Please check your REDIS_URL. Server will run without Redis.');
       this.client = null as any;
     }
@@ -42,7 +42,7 @@ export class RedisUtil {
     try {
       logger.info('🔍 Redis: Attempting to connect...');
       await this.client.connect();
-    } catch (err) {
+    } catch (redisError) {
       // Quiet fail - app can work without Redis
     } finally {
       this.isConnecting = false;
@@ -52,9 +52,9 @@ export class RedisUtil {
   async get<T>(key: string): Promise<T | null> {
     if (!this.client.isOpen) return null;
     try {
-      const data = await this.client.get(key);
-      return data ? JSON.parse(data) : null;
-    } catch (err) {
+      const cachedValue = await this.client.get(key);
+      return cachedValue ? JSON.parse(cachedValue) : null;
+    } catch (redisError) {
       return null;
     }
   }
@@ -63,7 +63,7 @@ export class RedisUtil {
     if (!this.client.isOpen) return;
     try {
       await this.client.setEx(key, seconds, JSON.stringify(value));
-    } catch (err) {
+    } catch (redisError) {
       // Ignore set errors
     }
   }
@@ -73,7 +73,7 @@ export class RedisUtil {
     try {
       await this.client.del(key);
       logger.info(`🗑️ [REDIS DEL] Đã xóa Key: ${key}`);
-    } catch (err) {
+    } catch (redisError) {
       // Ignore del errors
     }
   }

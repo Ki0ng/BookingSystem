@@ -1,313 +1,132 @@
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 import prisma from '../config/db.config';
 import { AuthResponse, GoogleProfile, ApplyManagerDTO, UpdateApplicationDTO } from '../types/auth.types';
 import { env } from '../config/env.config';
 import { MailService } from './mail.service';
-import { getIO } from '../config/socket.config';
-import logger from '../utils/logger';
+import { socketService } from './socket.service';
+import { UserRepository } from '../repositories/user.repository';
+import { ApplicationRepository } from '../repositories/application.repository';
+import { BookingRepository } from '../repositories/booking.repository';
+import { HotelRepository } from '../repositories/hotel.repository';
+import { NotificationRepository } from '../repositories/notification.repository';
+import { AuthUtils } from '../utils/auth.utils';
+import jwt from 'jsonwebtoken';
 
 export class AuthService {
   private readonly jwtSecret = env.JWT_SECRET || 'super-secret';
   private readonly jwtRefreshSecret = env.JWT_REFRESH_SECRET || 'super-refresh-secret';
   private readonly mailService = new MailService();
+  private readonly userRepository = new UserRepository();
+  private readonly appRepository = new ApplicationRepository();
+  private readonly bookingRepository = new BookingRepository();
+  private readonly hotelRepository = new HotelRepository();
+  private readonly notificationRepository = new NotificationRepository();
 
   sendOTP = async (email: string): Promise<void> => {
-    // Generate 6-digit code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedCode = await bcrypt.hash(code, 10);
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (user) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          verificationCode: hashedCode,
-          verificationCodeExpires: expires,
-        },
-      });
-    } else {
-      await prisma.user.create({
-        data: {
-          email,
-          verificationCode: hashedCode,
-          verificationCodeExpires: expires,
-          role: 'USER',
-        },
-      });
-    }
-
+    const { code, hash, expires } = await AuthUtils.generateOTP();
+    await this.userRepository.upsertVerificationCode(email, hash, expires);
     await this.mailService.sendOTP(email, code);
   };
 
   verifyOTP = async (email: string, code: string): Promise<AuthResponse> => {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await this.userRepository.findByEmail(email);
+    if (!user || !user.verificationCode || !user.verificationCodeExpires) throw new Error('Invalid code');
+    if (user.verificationCodeExpires < new Date()) throw new Error('Expired code');
 
-    if (!user || !user.verificationCode || !user.verificationCodeExpires) {
-      throw new Error('Invalid or expired verification code');
-    }
+    const isMatch = await AuthUtils.compareOTP(code, user.verificationCode);
+    if (!isMatch) throw new Error('Invalid code');
 
-    if (user.verificationCodeExpires < new Date()) {
-      throw new Error('Verification code has expired');
-    }
-
-    const isMatch = await bcrypt.compare(code, user.verificationCode);
-    if (!isMatch) {
-      throw new Error('Invalid verification code');
-    }
-
-    // Clear code after successful verification
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        verificationCode: null,
-        verificationCodeExpires: null,
-      },
-    });
-
-    return this.generateTokens(updatedUser.id, updatedUser.role);
+    await this.userRepository.clearVerificationCode(user.id);
+    return AuthUtils.generateTokens(user.id, user.role, this.jwtSecret, this.jwtRefreshSecret);
   };
 
   googleLogin = async (profile: GoogleProfile): Promise<AuthResponse> => {
-    if (!profile.emails || profile.emails.length === 0) {
-      throw new Error('Google account must have an email associated.');
-    }
-
+    if (!profile.emails?.[0]) throw new Error('Email required');
     const email = profile.emails[0].value;
     const googleId = profile.id;
+    const name = profile.displayName || email.split('@')[0];
+    const avatar = profile.photos?.[0]?.value || null;
 
-    // Try to get the best possible name
-    const name = profile.displayName ||
-      (profile._json?.name) ||
-      (`${profile._json?.given_name || ''} ${profile._json?.family_name || ''}`).trim() ||
-      email.split('@')[0];
-
-    const avatar = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : (profile._json?.picture || null);
-
-    let user = await prisma.user.findUnique({ where: { googleId } });
-
+    let user = await this.userRepository.findByGoogleId(googleId);
     if (!user) {
-      user = await prisma.user.findUnique({ where: { email } });
-
-      if (user) {
-        // Update existing email-based user with Google info
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            googleId,
-            avatar,
-            name: user.name ? user.name : name // Keep existing name if present, otherwise use Google's
-          },
-        });
-      } else {
-        // Create new user
-        user = await prisma.user.create({
-          data: {
-            email,
-            googleId,
-            name,
-            avatar,
-            role: 'USER',
-          },
-        });
-      }
+      user = await this.userRepository.findByEmail(email);
+      if (user) user = await this.userRepository.update(user.id, { googleId, avatar, name: user.name || name });
+      else user = await this.userRepository.create({ email, googleId, name, avatar, role: 'USER' });
     } else {
-      // Sync info if it changed for existing Google user
-      const updates: any = {};
-      if (avatar && user.avatar !== avatar) updates.avatar = avatar;
-      if (name && user.name !== name) updates.name = name;
-
-      if (Object.keys(updates).length > 0) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: updates,
-        });
-      }
+      await this.syncGoogleProfile(user.id, user.name, user.avatar, name, avatar);
     }
-
-    return this.generateTokens(user.id, user.role);
+    return AuthUtils.generateTokens(user.id, user.role, this.jwtSecret, this.jwtRefreshSecret);
   };
 
-  updateProfile = async (userId: string, data: { name?: string; phone?: string }): Promise<void> => {
-    await prisma.user.update({
-      where: { id: userId },
-      data,
-    });
+  private syncGoogleProfile = async (userId: string, currentName: string, currentAvatar: string | null, newName: string, newAvatar: string | null) => {
+    const profileUpdates: any = {};
+    if (newAvatar && currentAvatar !== newAvatar) profileUpdates.avatar = newAvatar;
+    if (newName && currentName !== newName) profileUpdates.name = newName;
+    if (Object.keys(profileUpdates).length > 0) await this.userRepository.update(userId, profileUpdates);
   };
 
-  applyManager = async (userId: string, data: ApplyManagerDTO): Promise<void> => {
-    const existingApp = await prisma.managerApplication.findUnique({
-      where: { userId }
-    });
-
-    if (existingApp) {
-      throw new Error('You have already submitted an application');
-    }
-
-    // Check for existing bookings
-    const hasBookings = await prisma.booking.findFirst({
-      where: { userId }
-    });
-
-    if (hasBookings) {
-      throw new Error('Users with existing bookings cannot apply for manager status. Please complete or cancel your bookings first.');
-    }
-
-    // Create application with PENDING status. NO automatic role upgrade.
-    const { hotelName, hotelAddress, phone, businessLicense, hotelDescription } = data as any;
-
-    const application = await prisma.managerApplication.create({
-      data: {
-        userId,
-        hotelName,
-        hotelAddress,
-        hotelDescription,
-        phone,
-        businessLicense,
-        status: 'PENDING'
-      },
-      include: { user: { select: { name: true, email: true } } }
-    });
-
-    // Notify Admin via Socket
-    try {
-      const io = getIO();
-      io.to('admin_room').emit('new_application', application);
-    } catch (e) { }
+  getProfile = async (userId: string) => {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new Error('User not found');
+    return user;
   };
 
-  listApplications = async (status?: 'PENDING' | 'APPROVED' | 'REJECTED') => {
-    return prisma.managerApplication.findMany({
-      where: status ? { status } : {},
-      include: {
-        user: {
-          select: {
-            email: true,
-            name: true
-          }
-        }
-      }
-    });
+  updateProfile = async (userId: string, profileData: any) => {
+    return this.userRepository.update(userId, profileData);
   };
 
-  updateApplicationStatus = async (applicationId: string, data: UpdateApplicationDTO): Promise<void> => {
-    logger.info(`[AUTH_SERVICE] Fetching application: ${applicationId}`);
-    const application = await prisma.managerApplication.findUnique({
-      where: { id: applicationId },
-      include: { user: true }
-    });
+  applyManager = async (userId: string, applicationData: ApplyManagerDTO) => {
+    await this.validateManagerApplication(userId);
+    const application = await this.appRepository.create({ userId, ...applicationData, status: 'PENDING' });
+    socketService.emitToAdmin('new_application', application);
+  };
 
-    if (!application) {
-      logger.error(`[AUTH_SERVICE] Application ${applicationId} NOT FOUND`);
-      throw new Error('Application not found');
-    }
+  private validateManagerApplication = async (userId: string) => {
+    if (await this.appRepository.findByUserId(userId)) throw new Error('Already applied');
+    if (await this.bookingRepository.findFirstByUserId(userId)) throw new Error('Existing bookings');
+  };
 
-    logger.info(`[AUTH_SERVICE] Starting transaction for application: ${applicationId} (${data.status})`);
+  listApplications = async (status?: any) => this.appRepository.list(status);
 
+  updateApplicationStatus = async (applicationId: string, statusUpdate: UpdateApplicationDTO) => {
+    const application = await this.appRepository.findById(applicationId);
+    if (!application) throw new Error('Not found');
+
+    await this.processApplicationUpdate(application.id, application.userId, application.phone, application.hotelName, application.hotelAddress, statusUpdate);
+    await this.createStatusNotification(application.userId, application.hotelName, statusUpdate.status);
+    await this.mailService.sendApplicationResult(application.user.email, statusUpdate.status, statusUpdate.adminComment);
+  };
+
+  private processApplicationUpdate = async (applicationId: string, applicantUserId: string, hotelPhone: string, hotelName: string, hotelAddress: string, statusUpdate: UpdateApplicationDTO) => {
     await prisma.$transaction(async (tx) => {
-      // 1. Update application status
-      await tx.managerApplication.update({
-        where: { id: applicationId },
-        data: {
-          status: data.status,
-          adminComment: data.adminComment
-        }
-      });
-
-      // 2. If approved, upgrade User to MANAGER and CREATE HOTEL
-      if (data.status === 'APPROVED') {
-        await tx.user.update({
-          where: { id: application.userId },
-          data: {
-            role: 'MANAGER',
-            phone: application.phone // Sync phone to user profile
-          }
-        });
-
-        // AUTO-CREATE HOTEL: Sài lại data từ đơn ứng tuyển
-        await tx.hotel.create({
-          data: {
-            ownerId: application.userId,
-            name: application.hotelName,
-            address: application.hotelAddress,
-            description: "A new luxury hotel waiting for details...",
-            location_lat: 0,
-            location_lng: 0,
-            status: 'APPROVED'
-          }
-        });
+      await tx.managerApplication.update({ where: { id: applicationId }, data: { status: statusUpdate.status, adminComment: statusUpdate.adminComment } });
+      if (statusUpdate.status === 'APPROVED') {
+        await tx.user.update({ where: { id: applicantUserId }, data: { role: 'MANAGER', phone: hotelPhone } });
+        await tx.hotel.create({ data: { ownerId: applicantUserId, name: hotelName, address: hotelAddress, description: "New hotel", location_lat: 0, location_lng: 0, status: 'APPROVED' } });
       }
     });
+  };
 
-    // 2.5 Create in-app notification
+  private createStatusNotification = async (userId: string, hotelName: string, status: any) => {
     try {
-      await prisma.notification.create({
-        data: {
-          userId: application.userId,
-          title: data.status === 'APPROVED' ? 'Application Approved!' : 'Manager Application Update',
-          message: data.status === 'APPROVED'
-            ? `Welcome! Your application for ${application.hotelName} has been approved.`
-            : `Update on your application for ${application.hotelName}. Check your email for details.`,
-          type: data.status === 'APPROVED' ? 'SUCCESS' : 'WARNING'
-        }
+      await this.notificationRepository.create({
+        userId,
+        title: status === 'APPROVED' ? 'Approved!' : 'Update',
+        message: status === 'APPROVED' ? `Welcome ${hotelName}` : `Update for ${hotelName}`,
+        type: status === 'APPROVED' ? 'SUCCESS' : 'WARNING'
       });
-    } catch (e) { }
-
-    // 3. Send email notification
-    await this.mailService.sendApplicationResult(
-      application.user.email,
-      data.status,
-      data.adminComment
-    );
+    } catch (e) {}
   };
 
-  forgotPassword = async (email: string): Promise<void> => {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      // Don't reveal if user exists for security
-      return;
-    }
-
-    const resetToken = jwt.sign(
-      { userId: user.id, type: 'reset-password' },
-      this.jwtSecret,
-      { expiresIn: '1h' }
-    );
-
-    const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    await this.mailService.sendPasswordReset(email, resetUrl);
+  forgotPassword = async (email: string) => {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) return;
+    const resetToken = jwt.sign({ userId: user.id, type: 'reset-password' }, this.jwtSecret, { expiresIn: '1h' });
+    await this.mailService.sendPasswordReset(email, `${env.FRONTEND_URL}/reset-password?token=${resetToken}`);
   };
 
-  resetPassword = async (data: any): Promise<void> => {
-    const { token, newPassword } = data;
-
-    try {
-      const decoded = jwt.verify(token, this.jwtSecret) as any;
-      if (decoded.type !== 'reset-password') {
-        throw new Error('Invalid token type');
-      }
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await prisma.user.update({
-        where: { id: decoded.userId },
-        data: { password_hash: hashedPassword }
-      });
-    } catch (error: any) {
-      throw new Error(error.message || 'Invalid or expired reset token');
-    }
-  };
-
-  private generateTokens = (userId: string, role: string): AuthResponse => {
-    const accessToken = jwt.sign({ userId, role }, this.jwtSecret, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ userId, role }, this.jwtRefreshSecret, { expiresIn: '7d' });
-
-    return {
-      accessToken,
-      refreshToken,
-      user: { userId, role }
-    };
+  resetPassword = async (resetData: any) => {
+    const decodedToken = jwt.verify(resetData.token, this.jwtSecret) as any;
+    if (decodedToken.type !== 'reset-password') throw new Error('Invalid');
+    await this.userRepository.updatePassword(decodedToken.userId, await AuthUtils.hashPassword(resetData.newPassword));
   };
 }

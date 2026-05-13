@@ -20,8 +20,8 @@ export class BookingController {
   });
 
   getManagerBookings = asyncHandler(async (req: Request, res: Response) => {
-    const result = await this.bookingService.getManagerBookings(req.user!.userId, req.query);
-    res.status(200).json({ success: true, ...result });
+    const paginatedBookings = await this.bookingService.getManagerBookings(req.user!.userId, req.query);
+    res.status(200).json({ success: true, ...paginatedBookings });
   });
 
   getBooking = asyncHandler(async (req: Request, res: Response) => {

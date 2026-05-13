@@ -24,8 +24,8 @@ export const hotelController = {
   }),
 
   getHotel: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const hotel = await hotelService.getHotelById(id);
+    const { id: hotelId } = req.params;
+    const hotel = await hotelService.getHotelById(hotelId);
 
     if (!hotel) {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
@@ -50,11 +50,11 @@ export const hotelController = {
   }),
 
   updateHotel: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id: hotelId } = req.params;
     const userId = (req.user as any).userId;
     const role = (req.user as any).role;
 
-    const existingHotel = await hotelService.getHotelById(id);
+    const existingHotel = await hotelService.getHotelById(hotelId);
     if (!existingHotel) {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
@@ -64,16 +64,16 @@ export const hotelController = {
       return res.status(403).json({ success: false, message: 'Not authorized to update this hotel' });
     }
 
-    const hotel = await hotelService.updateHotel(id, req.body);
-    res.json({ success: true, data: hotel });
+    const updatedHotel = await hotelService.updateHotel(hotelId, req.body);
+    res.json({ success: true, data: updatedHotel });
   }),
 
   deleteHotel: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id: hotelId } = req.params;
     const userId = (req.user as any).userId;
     const role = (req.user as any).role;
 
-    const existingHotel = await hotelService.getHotelById(id);
+    const existingHotel = await hotelService.getHotelById(hotelId);
     if (!existingHotel) {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
@@ -82,7 +82,7 @@ export const hotelController = {
       return res.status(403).json({ success: false, message: 'Not authorized to delete this hotel' });
     }
 
-    await hotelService.deleteHotel(id);
+    await hotelService.deleteHotel(hotelId);
     res.json({ success: true, message: 'Hotel deleted successfully' });
   })
 };

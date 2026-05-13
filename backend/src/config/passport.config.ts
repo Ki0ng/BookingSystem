@@ -13,14 +13,14 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
         clientSecret: env.GOOGLE_CLIENT_SECRET,
         callbackURL: env.GOOGLE_CALLBACK_URL || '',
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (accessToken, refreshToken, googleProfile, done) => {
         try {
-          const result = await authService.googleLogin(profile);
+          const authTokens = await authService.googleLogin(googleProfile);
           return done(null, {
-            userId: result.user.userId,
-            role: result.user.role,
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
+            userId: authTokens.user.userId,
+            role: authTokens.user.role,
+            accessToken: authTokens.accessToken,
+            refreshToken: authTokens.refreshToken,
           });
         } catch (error: any) {
           return done(error, undefined);
