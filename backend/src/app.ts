@@ -25,8 +25,8 @@ app.use(helmet());
 // Improved CORS configuration
 const allowedOrigins = [
   env.FRONTEND_URL,
-  env.FRONTEND_URL.endsWith('/') ? env.FRONTEND_URL.slice(0, -1) : `${env.FRONTEND_URL}/`,
-  'http://localhost:3000' // Always allow local dev
+  'https://booking-system-1l7r057l5-kinle2005-1833s-projects.vercel.app',
+  'http://localhost:3000'
 ];
 
 app.use(cors({
@@ -34,6 +34,7 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`🚨 CORS Blocked: Origin ${origin} not in allowedOrigins:`, allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
