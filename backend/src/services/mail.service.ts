@@ -7,19 +7,25 @@ export class MailService {
 
   constructor() {
     const mailConfig: any = {
-      host: 'smtp.gmail.com', // Fix cứng host Gmail
-      port: 587, // Sử dụng cổng 587 (STARTTLS) ổn định hơn trên Render
-      secure: false, // false cho cổng 587
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // STARTTLS
       auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       },
+      tls: {
+        rejectUnauthorized: false, // Tránh lỗi certificate trên một số môi trường cloud
+        minVersion: 'TLSv1.2'
+      },
       pool: true,
-      maxConnections: 5,
+      maxConnections: 3,
       maxMessages: 100,
       connectionTimeout: 20000,
       greetingTimeout: 20000,
-      family: 4, // Bắt buộc IPv4
+      family: 4, 
+      debug: true, // Hiển thị chi tiết log SMTP trong console Render
+      logger: true
     };
 
     this.transporter = nodemailer.createTransport(mailConfig);
@@ -66,6 +72,7 @@ export class MailService {
       await this.transporter.sendMail(mailOptions);
       logger.info(`[MAIL] OTP sent to ${to}`);
     } catch (error: any) {
+      console.error('🔥 [MAIL_FATAL_ERROR]:', error); // Xuất thẳng ra console của Render
       logger.error('[MAIL] Error sending email:', {
         message: error.message,
         code: error.code,
