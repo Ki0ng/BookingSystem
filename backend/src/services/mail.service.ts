@@ -17,7 +17,9 @@ export class MailService {
       pool: true,
       maxConnections: 5,
       maxMessages: 100,
-      connectionTimeout: 10000,
+      connectionTimeout: 20000, // Tăng timeout cho môi trường Render
+      greetingTimeout: 20000,
+      family: 4, // Bắt buộc dùng IPv4 để tránh lỗi ENETUNREACH trên Render
     };
 
     // Use Gmail service configuration if the host is Gmail for better reliability
