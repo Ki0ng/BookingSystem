@@ -7,28 +7,20 @@ export class MailService {
 
   constructor() {
     const mailConfig: any = {
-      host: env.SMTP_HOST,
-      port: Number(env.SMTP_PORT),
-      secure: env.SMTP_PORT === '465',
-      auth: env.SMTP_USER && env.SMTP_PASS ? {
+      host: 'smtp.gmail.com', // Fix cứng host Gmail
+      port: 587, // Sử dụng cổng 587 (STARTTLS) ổn định hơn trên Render
+      secure: false, // false cho cổng 587
+      auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
-      } : undefined,
+      },
       pool: true,
       maxConnections: 5,
       maxMessages: 100,
-      connectionTimeout: 20000, // Tăng timeout cho môi trường Render
+      connectionTimeout: 20000,
       greetingTimeout: 20000,
-      family: 4, // Bắt buộc dùng IPv4 để tránh lỗi ENETUNREACH trên Render
+      family: 4, // Bắt buộc IPv4
     };
-
-    // Use Gmail service configuration if the host is Gmail for better reliability
-    if (env.SMTP_HOST === 'smtp.gmail.com') {
-      delete mailConfig.host;
-      delete mailConfig.port;
-      delete mailConfig.secure;
-      mailConfig.service = 'gmail';
-    }
 
     this.transporter = nodemailer.createTransport(mailConfig);
 
