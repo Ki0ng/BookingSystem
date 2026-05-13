@@ -15,11 +15,8 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CALLBACK_URL: z.string().optional(),
-  SMTP_HOST: z.string().default('smtp.gmail.com'),
-  SMTP_PORT: z.string().default('587'),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().default('Elite Booking <noreply@elitebooking.com>'),
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().default('Elite Booking <onboarding@resend.dev>'),
 });
 
 const envServer = envSchema.safeParse(process.env);
