@@ -15,8 +15,8 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CALLBACK_URL: z.string().optional(),
-  RESEND_API_KEY: z.string().optional(),
-  MAIL_FROM: z.string().default('Elite Booking <onboarding@resend.dev>'),
+  BREVO_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().default('Elite Booking <kinle2005@gmail.com>'),
 });
 
 const envServer = envSchema.safeParse(process.env);

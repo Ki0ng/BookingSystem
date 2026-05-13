@@ -2,47 +2,59 @@ import { env } from '../config/env.config';
 import logger from '../utils/logger';
 
 export class MailService {
-  private readonly apiKey = env.RESEND_API_KEY;
+  private readonly apiKey = env.BREVO_API_KEY;
   private readonly from = env.MAIL_FROM;
 
   constructor() {
     if (!this.apiKey) {
-      logger.warn('[MAIL] RESEND_API_KEY is missing. Emails will not be sent.');
+      console.error('❌ [MAIL] BREVO_API_KEY is MISSING in environment variables!');
+      logger.warn('[MAIL] BREVO_API_KEY is missing. Emails will not be sent.');
+    } else {
+      console.log('✅ [MAIL] BREVO_API_KEY is LOADED');
     }
   }
 
-  private async sendViaResend(to: string, subject: string, html: string): Promise<void> {
+  private async sendViaBrevo(to: string, subject: string, html: string): Promise<void> {
     if (!this.apiKey) {
       logger.error('[MAIL] Cannot send email: API Key missing');
       throw new Error('Email service configuration missing');
     }
 
+    // Extract email from "Name <email@example.com>" format or use as is
+    const fromEmail = this.from.includes('<')
+      ? this.from.split('<')[1].replace('>', '').trim()
+      : this.from;
+    const fromName = this.from.includes('<')
+      ? this.from.split('<')[0].trim()
+      : 'Elite Booking';
+
     try {
-      const response = await fetch('https://api.resend.com/emails', {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
+          'accept': 'application/json',
+          'api-key': this.apiKey,
+          'content-type': 'application/json',
         },
         body: JSON.stringify({
-          from: this.from,
-          to,
-          subject,
-          html,
+          sender: { name: fromName, email: fromEmail },
+          to: [{ email: to }],
+          subject: subject,
+          htmlContent: html,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        logger.error('[MAIL] Resend API Error:', data);
-        throw new Error(data.message || 'Failed to send email via Resend');
+        logger.error('[MAIL] Brevo API Error:', data);
+        throw new Error(data.message || 'Failed to send email via Brevo');
       }
 
-      logger.info(`[MAIL] Email sent successfully to ${to} via Resend. ID: ${data.id}`);
+      logger.info(`[MAIL] Email sent successfully to ${to} via Brevo. MessageID: ${data.messageId}`);
     } catch (error: any) {
-      console.error('🔥 [MAIL_RESEND_ERROR]:', error);
-      logger.error('[MAIL] Error sending email via Resend:', {
+      console.error('🔥 [MAIL_BREVO_ERROR]:', error);
+      logger.error('[MAIL] Error sending email via Brevo:', {
         message: error.message,
         to,
         subject
@@ -69,22 +81,22 @@ export class MailService {
       </div>
     `;
 
-    await this.sendViaResend(to, subject, html);
+    await this.sendViaBrevo(to, subject, html);
   };
 
   sendApplicationResult = async (to: string, status: 'APPROVED' | 'REJECTED', comment?: string): Promise<void> => {
     const isApproved = status === 'APPROVED';
-    const subject = isApproved 
-      ? 'Congratulations! Your Manager Application is Approved' 
+    const subject = isApproved
+      ? 'Congratulations! Your Manager Application is Approved'
       : 'Update on Your Manager Application';
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: ${isApproved ? '#10b981' : '#ef4444'}; text-align: center;">ELITE BOOKING</h2>
         <p>Hello,</p>
-        <p>${isApproved 
-          ? 'We are pleased to inform you that your application to become a Hotel Manager on Elite Booking has been <strong>APPROVED</strong>.' 
-          : 'Thank you for your interest in becoming a Manager at Elite Booking. After reviewing your profile, we are unable to approve your application at this time.'}</p>
+        <p>${isApproved
+        ? 'We are pleased to inform you that your application to become a Hotel Manager on Elite Booking has been <strong>APPROVED</strong>.'
+        : 'Thank you for your interest in becoming a Manager at Elite Booking. After reviewing your profile, we are unable to approve your application at this time.'}</p>
         
         ${comment ? `<div style="background-color: #f3f4f6; padding: 15px; border-left: 4px solid #6b7280; margin: 20px 0;">
           <strong>Admin Comment:</strong><br/>
@@ -106,7 +118,7 @@ export class MailService {
     `;
 
     try {
-      await this.sendViaResend(to, subject, html);
+      await this.sendViaBrevo(to, subject, html);
     } catch (error) {
       // Non-critical if application result fails to send
     }
@@ -132,6 +144,6 @@ export class MailService {
       </div>
     `;
 
-    await this.sendViaResend(to, subject, html);
+    await this.sendViaBrevo(to, subject, html);
   };
 }
