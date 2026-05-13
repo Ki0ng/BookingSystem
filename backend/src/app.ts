@@ -31,10 +31,15 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Cho phép localhost và URL frontend chính
+    const isLocalhost = origin?.startsWith('http://localhost');
+    const isVercel = origin?.endsWith('vercel.app') && origin?.includes('kinle2005-1833s-projects');
+    const isMainFrontend = origin === env.FRONTEND_URL;
+
+    if (!origin || isLocalhost || isVercel || isMainFrontend) {
       callback(null, true);
     } else {
-      console.warn(`🚨 CORS Blocked: Origin ${origin} not in allowedOrigins:`, allowedOrigins);
+      console.warn(`🚨 CORS Blocked: Origin ${origin} not in allowed list`);
       callback(new Error('Not allowed by CORS'));
     }
   },
