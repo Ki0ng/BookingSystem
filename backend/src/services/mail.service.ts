@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { env } from '../config/env.config';
 import logger from '../utils/logger';
 
@@ -7,7 +6,7 @@ export class MailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    const mailConfig = {
+    const mailConfig: any = {
       host: env.SMTP_HOST,
       port: Number(env.SMTP_PORT),
       secure: env.SMTP_PORT === '465',
@@ -19,16 +18,27 @@ export class MailService {
       maxConnections: 5,
       maxMessages: 100,
       connectionTimeout: 10000,
-      family: 4, // Force IPv4
     };
 
-    this.transporter = nodemailer.createTransport(mailConfig as any);
+    // Use Gmail service configuration if the host is Gmail for better reliability
+    if (env.SMTP_HOST === 'smtp.gmail.com') {
+      delete mailConfig.host;
+      delete mailConfig.port;
+      delete mailConfig.secure;
+      mailConfig.service = 'gmail';
+    }
+
+    this.transporter = nodemailer.createTransport(mailConfig);
 
     // Verify connection on startup
     if (env.SMTP_USER && env.SMTP_PASS) {
       this.transporter.verify((error) => {
         if (error) {
-          logger.error('[MAIL] SMTP Verification Failed:', error);
+          logger.error('[MAIL] SMTP Verification Failed:', {
+            message: error.message,
+            code: (error as any).code,
+            stack: error.stack
+          });
         } else {
           logger.info('[MAIL] SMTP Server is ready to take messages');
         }
@@ -38,11 +48,11 @@ export class MailService {
 
   sendOTP = async (to: string, code: string): Promise<void> => {
     const mailOptions = {
-      from: env.SMTP_FROM,
+      from: env.SMTP_FROM || env.SMTP_USER,
       to,
       subject: 'Your Elite Booking Verification Code',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; rounded: 10px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
           <h2 style="color: #2563eb; text-align: center;">ELITE BOOKING</h2>
           <p>Hello,</p>
           <p>Use the following verification code to sign in to your account. This code will expire in 10 minutes.</p>
@@ -61,8 +71,13 @@ export class MailService {
     try {
       await this.transporter.sendMail(mailOptions);
       logger.info(`[MAIL] OTP sent to ${to}`);
-    } catch (error) {
-      logger.error('[MAIL] Error sending email:', error);
+    } catch (error: any) {
+      logger.error('[MAIL] Error sending email:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        to
+      });
       throw new Error('Failed to send verification email');
     }
   };
@@ -74,7 +89,7 @@ export class MailService {
       : 'Update on Your Manager Application';
 
     const mailOptions = {
-      from: env.SMTP_FROM,
+      from: env.SMTP_FROM || env.SMTP_USER,
       to,
       subject,
       html: `
@@ -108,14 +123,17 @@ export class MailService {
     try {
       await this.transporter.sendMail(mailOptions);
       logger.info(`[MAIL] Application result sent to ${to}`);
-    } catch (error) {
-      logger.error('[MAIL] Error sending application result email:', error);
+    } catch (error: any) {
+      logger.error('[MAIL] Error sending application result email:', {
+        message: error.message,
+        to
+      });
     }
   };
 
   sendPasswordReset = async (to: string, resetUrl: string): Promise<void> => {
     const mailOptions = {
-      from: env.SMTP_FROM,
+      from: env.SMTP_FROM || env.SMTP_USER,
       to,
       subject: 'Reset Your Elite Booking Password',
       html: `
@@ -140,8 +158,11 @@ export class MailService {
     try {
       await this.transporter.sendMail(mailOptions);
       logger.info(`[MAIL] Password reset link sent to ${to}`);
-    } catch (error) {
-      logger.error('[MAIL] Error sending password reset email:', error);
+    } catch (error: any) {
+      logger.error('[MAIL] Error sending password reset email:', {
+        message: error.message,
+        to
+      });
       throw new Error('Failed to send password reset email');
     }
   };

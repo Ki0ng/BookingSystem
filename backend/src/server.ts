@@ -16,4 +16,3 @@ redisUtil.connect().then(() => {
     logger.info(`🚀 Server running on http://localhost:${PORT}`);
   });
 });
-
