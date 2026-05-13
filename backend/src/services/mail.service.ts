@@ -8,23 +8,21 @@ export class MailService {
   constructor() {
     const mailConfig: any = {
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // STARTTLS
+      port: 465,
+      secure: true, // Dùng SSL cho cổng 465
       auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       },
       tls: {
-        rejectUnauthorized: false, // Tránh lỗi certificate trên một số môi trường cloud
-        minVersion: 'TLSv1.2'
+        rejectUnauthorized: false,
+        servername: 'smtp.gmail.com'
       },
-      pool: true,
-      maxConnections: 3,
-      maxMessages: 100,
+      pool: false, // Tắt pool để tránh lỗi kết nối lơ lửng trên Render
       connectionTimeout: 20000,
       greetingTimeout: 20000,
       family: 4, 
-      debug: true, // Hiển thị chi tiết log SMTP trong console Render
+      debug: true,
       logger: true
     };
 

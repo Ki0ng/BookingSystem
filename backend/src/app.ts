@@ -19,6 +19,9 @@ import reviewRoutes from './routes/review.routes';
 
 const app = express();
 
+// Render.com uses proxies, so we need to trust them for express-rate-limit to work
+app.set('trust proxy', 1);
+
 // Security Middlewares
 app.use(helmet());
 
@@ -33,14 +36,19 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
 
+    // Chuẩn hóa FRONTEND_URL (bỏ dấu / ở cuối nếu có)
+    const normalizedFrontendUrl = env.FRONTEND_URL?.endsWith('/') 
+      ? env.FRONTEND_URL.slice(0, -1) 
+      : env.FRONTEND_URL;
+
     const isLocalhost = origin.startsWith('http://localhost');
     const isVercel = origin.endsWith('.vercel.app') || origin.includes('vercel.app');
-    const isMainFrontend = origin === env.FRONTEND_URL;
+    const isMainFrontend = origin === normalizedFrontendUrl;
 
     if (isLocalhost || isVercel || isMainFrontend) {
       callback(null, true);
     } else {
-      console.warn(`🚨 CORS Blocked: Origin ${origin} not in allowed list`);
+      console.warn(`🚨 CORS Blocked: Origin ${origin} not in allowed list. Normalized FRONTEND_URL: ${normalizedFrontendUrl}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
