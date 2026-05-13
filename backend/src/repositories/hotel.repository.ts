@@ -43,8 +43,15 @@ export class HotelRepository {
     });
   }
 
-  async delete(id: string): Promise<Hotel> {
-    return prisma.hotel.delete({ where: { id } });
+  async delete(hotelId: string): Promise<Hotel> {
+    return prisma.hotel.delete({ where: { id: hotelId } });
+  }
+
+  async findAll(): Promise<any[]> {
+    return prisma.hotel.findMany({
+      include: { owner: true },
+      orderBy: { createdAt: 'desc' }
+    });
   }
 
   async deleteImages(hotelId: string, tx?: Prisma.TransactionClient): Promise<void> {

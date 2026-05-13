@@ -4,6 +4,7 @@ import logger from '../utils/logger';
 import { HotelRepository } from '../repositories/hotel.repository';
 import { BookingRepository } from '../repositories/booking.repository';
 import { HotelUtils } from '../utils/hotel.utils';
+import { CACHE_PREFIX, CACHE_TTL } from '../config/constants';
 
 export class HotelService {
   private readonly hotelRepository = new HotelRepository();
@@ -62,21 +63,28 @@ export class HotelService {
     const availableHotels: any[] = [];
 
     for (const hotel of hotels) {
-      let isHotelAvailable = false;
-      for (const window of flexibilityWindows) {
-        const roomAvailability = await Promise.all(hotel.rooms.map(async (room: any) => {
-          const overlappingBookingsCount = await this.bookingRepository.countOverlapping(room.id, window.in, window.out);
-          return (room.quantity - overlappingBookingsCount) > 0;
-        }));
-
-        if (roomAvailability.some(available => available)) {
-          isHotelAvailable = true;
-          break;
-        }
+      if (await this.isHotelAvailableInWindows(hotel, flexibilityWindows)) {
+        availableHotels.push(hotel);
       }
-      if (isHotelAvailable) availableHotels.push(hotel);
     }
     return availableHotels;
+  };
+
+  private isHotelAvailableInWindows = async (hotel: any, windows: { in: Date, out: Date }[]) => {
+    for (const window of windows) {
+      if (await this.isAnyRoomAvailable(hotel.rooms, window)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  private isAnyRoomAvailable = async (rooms: any[], window: { in: Date, out: Date }) => {
+    const roomAvailabilityResults = await Promise.all(rooms.map(async (room: any) => {
+      const overlappingBookingsCount = await this.bookingRepository.countOverlapping(room.id, window.in, window.out);
+      return (room.quantity - overlappingBookingsCount) > 0;
+    }));
+    return roomAvailabilityResults.some(isAvailable => isAvailable);
   };
 
   getHotelsByOwner = async (ownerId: string) => {
@@ -84,7 +92,7 @@ export class HotelService {
   };
 
   getHotelById = async (id: string) => {
-    const cacheKey = `hotel:v2:${id}`;
+    const cacheKey = `${CACHE_PREFIX.HOTEL}${id}`;
     const cachedData = await redisUtil.get<any>(cacheKey);
     if (cachedData) return cachedData;
 
@@ -95,7 +103,7 @@ export class HotelService {
       amenities: true
     });
 
-    if (hotel) await redisUtil.setEx(cacheKey, 900, hotel);
+    if (hotel) await redisUtil.setEx(cacheKey, CACHE_TTL.HOTEL_DETAILS, hotel);
     return hotel;
   };
 
@@ -118,7 +126,7 @@ export class HotelService {
       await this.createDefaultRoom(hotel.id, parseFloat(base_price), capacity, quantity || 1, adults || 2, children || 0);
     }
 
-    await redisUtil.setEx(`hotel:v2:${hotel.id}`, 900, hotel);
+    await redisUtil.setEx(`${CACHE_PREFIX.HOTEL}${hotel.id}`, CACHE_TTL.HOTEL_DETAILS, hotel);
     return hotel;
   };
 
@@ -152,11 +160,11 @@ export class HotelService {
       }, transactionClient);
     });
 
-    await redisUtil.del(`hotel:v2:${id}`);
+    await redisUtil.del(`${CACHE_PREFIX.HOTEL}${id}`);
   };
 
   deleteHotel = async (id: string) => {
-    await redisUtil.del(`hotel:v2:${id}`);
+    await redisUtil.del(`${CACHE_PREFIX.HOTEL}${id}`);
     return this.hotelRepository.delete(id);
   };
 }

@@ -6,8 +6,8 @@ export class UserRepository {
     return prisma.user.findUnique({ where: { email } });
   }
 
-  async findById(id: string): Promise<User | null> {
-    return prisma.user.findUnique({ where: { id } });
+  async findById(userId: string): Promise<User | null> {
+    return prisma.user.findUnique({ where: { id: userId } });
   }
 
   async findByGoogleId(googleId: string): Promise<User | null> {
@@ -25,18 +25,18 @@ export class UserRepository {
     return prisma.user.create({ data: userData });
   }
 
-  async upsertVerificationCode(email: string, hashedCode: string, expires: Date): Promise<User> {
+  async upsertVerificationCode(email: string, hashedCode: string, expiryDate: Date): Promise<User> {
     const existingUser = await this.findByEmail(email);
     if (existingUser) {
       return this.update(existingUser.id, {
         verificationCode: hashedCode,
-        verificationCodeExpires: expires,
+        verificationCodeExpires: expiryDate,
       });
     } else {
       return this.create({
         email,
         verificationCode: hashedCode,
-        verificationCodeExpires: expires,
+        verificationCodeExpires: expiryDate,
         role: 'USER',
       });
     }
@@ -51,5 +51,11 @@ export class UserRepository {
 
   async updatePassword(userId: string, passwordHash: string): Promise<User> {
     return this.update(userId, { password_hash: passwordHash });
+  }
+
+  async findAll(): Promise<User[]> {
+    return prisma.user.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
   }
 }

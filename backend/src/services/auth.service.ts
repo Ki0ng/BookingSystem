@@ -10,6 +10,7 @@ import { HotelRepository } from '../repositories/hotel.repository';
 import { NotificationRepository } from '../repositories/notification.repository';
 import { AuthUtils } from '../utils/auth.utils';
 import jwt from 'jsonwebtoken';
+import { AUTH_CONFIG } from '../config/constants';
 
 export class AuthService {
   private readonly jwtSecret = env.JWT_SECRET || 'super-secret';
@@ -120,13 +121,13 @@ export class AuthService {
   forgotPassword = async (email: string) => {
     const user = await this.userRepository.findByEmail(email);
     if (!user) return;
-    const resetToken = jwt.sign({ userId: user.id, type: 'reset-password' }, this.jwtSecret, { expiresIn: '1h' });
+    const resetToken = jwt.sign({ userId: user.id, type: AUTH_CONFIG.RESET_PASSWORD_TOKEN_TYPE }, this.jwtSecret, { expiresIn: AUTH_CONFIG.RESET_PASSWORD_TOKEN_EXPIRY });
     await this.mailService.sendPasswordReset(email, `${env.FRONTEND_URL}/reset-password?token=${resetToken}`);
   };
 
   resetPassword = async (resetData: any) => {
     const decodedToken = jwt.verify(resetData.token, this.jwtSecret) as any;
-    if (decodedToken.type !== 'reset-password') throw new Error('Invalid');
+    if (decodedToken.type !== AUTH_CONFIG.RESET_PASSWORD_TOKEN_TYPE) throw new Error('Invalid');
     await this.userRepository.updatePassword(decodedToken.userId, await AuthUtils.hashPassword(resetData.newPassword));
   };
 }

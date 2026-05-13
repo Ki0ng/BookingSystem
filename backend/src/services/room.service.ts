@@ -1,5 +1,5 @@
-import prisma from '../config/db.config';
-import { RoomStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { RoomRepository } from '../repositories/room.repository';
 
 export interface CreateRoomDTO {
   hotelId: string;
@@ -7,67 +7,46 @@ export interface CreateRoomDTO {
   base_price: number;
   quantity: number;
   capacity: number;
-  status?: RoomStatus;
+  status?: any;
   metadata?: any;
   images?: string[];
 }
 
 export class RoomService {
-  createRoom = async (data: CreateRoomDTO) => {
-    const { images, ...roomData } = data;
+  private readonly roomRepository = new RoomRepository();
+
+  createRoom = async (inputData: CreateRoomDTO) => {
+    const { images, ...roomData } = inputData;
     
-    return await prisma.room.create({
-      data: {
-        ...roomData,
-        metadata: roomData.metadata || {},
-        images: {
-          create: images?.map(url => ({ url })) || []
-        }
-      },
-      include: {
-        images: true
-      }
-    });
+    const formattedData: Prisma.RoomUncheckedCreateInput = {
+      ...roomData,
+      metadata: roomData.metadata || {},
+      images: images ? {
+        create: images.map(url => ({ url }))
+      } : undefined
+    };
+
+    return await this.roomRepository.create(formattedData);
   };
 
   getRoomsByHotel = async (hotelId: string) => {
-    return await prisma.room.findMany({
-      where: { hotelId },
-      include: {
-        images: true
-      }
-    });
+    return await this.roomRepository.findManyByHotelId(hotelId);
   };
 
-  updateRoom = async (roomId: string, data: Partial<CreateRoomDTO>) => {
-    const { images, ...roomData } = data;
+  updateRoom = async (roomId: string, inputUpdates: Partial<CreateRoomDTO>) => {
+    const { images, ...roomUpdates } = inputUpdates;
 
-    // Use transaction to update room and sync images
-    return await prisma.$transaction(async (tx) => {
-      if (images) {
-        // Simple strategy: delete old images and add new ones
-        await tx.image.deleteMany({ where: { roomId } });
-        await tx.image.createMany({
-          data: images.map(url => ({ url, roomId }))
-        });
-      }
-
-      return await tx.room.update({
-        where: { id: roomId },
-        data: {
-          ...roomData,
-          metadata: roomData.metadata || undefined
-        },
-        include: {
-          images: true
-        }
-      });
+    return await this.roomRepository.update(roomId, {
+      ...roomUpdates,
+      metadata: roomUpdates.metadata || undefined,
+      images: images ? {
+        deleteMany: {},
+        create: images.map(url => ({ url }))
+      } : undefined
     });
   };
 
   deleteRoom = async (roomId: string) => {
-    return await prisma.room.delete({
-      where: { id: roomId }
-    });
+    return await this.roomRepository.delete(roomId);
   };
 }

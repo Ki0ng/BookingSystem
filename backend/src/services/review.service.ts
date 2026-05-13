@@ -3,6 +3,7 @@ import { ReviewStatus, Role } from '@prisma/client';
 import { socketService } from './socket.service';
 import { ReviewRepository } from '../repositories/review.repository';
 import { HotelRepository } from '../repositories/hotel.repository';
+import { PAGINATION } from '../config/constants';
 
 export class ReviewService {
   private readonly reviewRepository = new ReviewRepository();
@@ -35,7 +36,7 @@ export class ReviewService {
   };
 
   getHotelReviews = async (hotelId: string, filterOptions: any, user?: { id: string; role: Role }) => {
-    const { page = 1, limit = 10, sortBy = 'newest' } = filterOptions;
+    const { page = PAGINATION.DEFAULT_PAGE, limit = PAGINATION.DEFAULT_LIMIT, sortBy = 'newest' } = filterOptions;
     const skip = (page - 1) * Number(limit);
     const [reviews, totalReviewsCount] = await this.reviewRepository.findMany(this.buildFilters(hotelId, filterOptions, user?.id, user?.role), skip, Number(limit), this.buildSort(sortBy));
     return { reviews, pagination: { total: totalReviewsCount, page, limit, pages: Math.ceil(totalReviewsCount / Number(limit)) } };

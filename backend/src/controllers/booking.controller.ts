@@ -10,42 +10,50 @@ export class BookingController {
   }
 
   create = asyncHandler(async (req: Request, res: Response) => {
-    const booking = await this.bookingService.createBooking(req.user!.userId, req.body);
-    res.status(201).json({ success: true, data: booking });
+    const newBooking = await this.bookingService.createBooking(req.user!.userId, req.body);
+    res.status(201).json({ success: true, data: newBooking });
   });
 
   getMyBookings = asyncHandler(async (req: Request, res: Response) => {
-    const bookings = await this.bookingService.getUserBookings(req.user!.userId);
-    res.status(200).json({ success: true, data: bookings });
+    const userBookings = await this.bookingService.getUserBookings(req.user!.userId);
+    res.status(200).json({ success: true, data: userBookings });
   });
 
   getManagerBookings = asyncHandler(async (req: Request, res: Response) => {
-    const paginatedBookings = await this.bookingService.getManagerBookings(req.user!.userId, req.query);
-    res.status(200).json({ success: true, ...paginatedBookings });
+    const paginatedBookingsData = await this.bookingService.getManagerBookings(req.user!.userId, req.query);
+    res.status(200).json({ success: true, ...paginatedBookingsData });
   });
 
   getBooking = asyncHandler(async (req: Request, res: Response) => {
-    const booking = await this.bookingService.getBookingDetails(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    const { id: bookingId } = req.params;
+    const bookingDetails = await this.bookingService.getBookingDetails(bookingId);
+    
+    if (!bookingDetails) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
     
     // Check if user is owner or admin
-    if (booking.userId !== req.user!.userId && req.user!.role !== 'ADMIN') {
+    if (bookingDetails.userId !== req.user!.userId && req.user!.role !== 'ADMIN') {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
-    res.status(200).json({ success: true, data: booking });
+    res.status(200).json({ success: true, data: bookingDetails });
   });
 
   cancel = asyncHandler(async (req: Request, res: Response) => {
-    const booking = await this.bookingService.getBookingDetails(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: 'Booking not found' });
+    const { id: bookingId } = req.params;
+    const bookingDetails = await this.bookingService.getBookingDetails(bookingId);
+    
+    if (!bookingDetails) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
     
     // Security: Only owner or admin can cancel
-    if (booking.userId !== req.user!.userId && req.user!.role !== 'ADMIN') {
+    if (bookingDetails.userId !== req.user!.userId && req.user!.role !== 'ADMIN') {
       return res.status(403).json({ success: false, message: 'Forbidden: You cannot cancel someone else\'s booking' });
     }
 
-    await this.bookingService.cancelBooking(req.params.id);
+    await this.bookingService.cancelBooking(bookingId);
     res.status(200).json({ success: true, message: 'Booking cancelled successfully' });
   });
 }

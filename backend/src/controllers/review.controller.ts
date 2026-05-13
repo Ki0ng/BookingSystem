@@ -8,7 +8,7 @@ export const reviewController = {
     const validatedData = createReviewSchema.parse(req.body);
     const userId = (req.user as any).userId;
 
-    const review = await reviewService.createReview(userId, {
+    const newReview = await reviewService.createReview(userId, {
       rating: validatedData.rating,
       comment: validatedData.comment,
       hotelId: validatedData.hotelId || null
@@ -17,22 +17,22 @@ export const reviewController = {
     res.status(201).json({
       success: true,
       message: 'Review submitted successfully and is pending moderation',
-      data: review
+      data: newReview
     });
   }),
 
   getPlatformReviews: asyncHandler(async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 6;
-    const reviews = await reviewService.getPlatformReviews(limit);
-    res.json({ success: true, data: reviews });
+    const platformReviews = await reviewService.getPlatformReviews(limit);
+    res.json({ success: true, data: platformReviews });
   }),
 
   getHotelReviews: asyncHandler(async (req: Request, res: Response) => {
     const { hotelId } = req.params;
     const validatedQuery = reviewQuerySchema.parse(req.query);
-    const user = req.user ? { id: (req.user as any).userId, role: (req.user as any).role } : undefined;
+    const currentUser = req.user ? { id: (req.user as any).userId, role: (req.user as any).role } : undefined;
 
-    const paginatedReviewsData = await reviewService.getHotelReviews(hotelId, validatedQuery, user);
+    const paginatedReviewsData = await reviewService.getHotelReviews(hotelId, validatedQuery, currentUser);
 
     res.json({
       success: true,
@@ -42,70 +42,70 @@ export const reviewController = {
   }),
 
   updateReview: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id: reviewId } = req.params;
     const validatedData = updateReviewSchema.parse(req.body);
     const userId = (req.user as any).userId;
 
-    const review = await reviewService.updateReview(id, userId, validatedData);
+    const updatedReview = await reviewService.updateReview(reviewId, userId, validatedData);
 
     res.json({
       success: true,
       message: 'Review updated and returned to pending status',
-      data: review
+      data: updatedReview
     });
   }),
 
   updateStatus: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id: reviewId } = req.params;
     const { status } = req.body;
     const managerId = (req.user as any).userId;
     const role = (req.user as any).role;
 
-    const review = await reviewService.updateReviewStatus(id, managerId, status, role);
+    const moderatedReview = await reviewService.updateReviewStatus(reviewId, managerId, status, role);
 
     res.json({
       success: true,
       message: `Review status updated to ${status}`,
-      data: review
+      data: moderatedReview
     });
   }),
 
   toggleVisibility: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id: reviewId } = req.params;
     const { isHidden } = req.body;
     const managerId = (req.user as any).userId;
     const role = (req.user as any).role;
 
-    const review = await reviewService.toggleReviewVisibility(id, managerId, isHidden, role);
+    const visibilityUpdatedReview = await reviewService.toggleReviewVisibility(reviewId, managerId, isHidden, role);
 
     res.json({
       success: true,
       message: `Review visibility updated`,
-      data: review
+      data: visibilityUpdatedReview
     });
   }),
 
   replyToReview: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id: reviewId } = req.params;
     const { message } = replyReviewSchema.parse(req.body);
     const managerId = (req.user as any).userId;
     const role = (req.user as any).role;
 
-    const reply = await reviewService.replyToReview(id, managerId, message, role);
+    const reviewReply = await reviewService.replyToReview(reviewId, managerId, message, role);
 
     res.status(201).json({
       success: true,
       message: 'Reply posted successfully',
-      data: reply
+      data: reviewReply
     });
   }),
 
   deleteReview: asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const { id: reviewId } = req.params;
     const userId = (req.user as any).userId;
     const role = (req.user as any).role;
 
-    await reviewService.deleteReview(id, userId, role);
+    await reviewService.deleteReview(reviewId, userId, role);
 
     res.json({
       success: true,
@@ -117,11 +117,11 @@ export const reviewController = {
     const managerId = (req.user as any).userId;
     const role = (req.user as any).role;
 
-    const stats = await reviewService.getManagerReviewStats(managerId, role);
+    const reviewStatistics = await reviewService.getManagerReviewStats(managerId, role);
 
     res.json({
       success: true,
-      data: stats
+      data: reviewStatistics
     });
   })
 };

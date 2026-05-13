@@ -5,6 +5,7 @@ import { socketService } from './socket.service';
 import { BookingRepository } from '../repositories/booking.repository';
 import { RoomRepository } from '../repositories/room.repository';
 import { BookingUtils } from '../utils/booking.utils';
+import { PAGINATION } from '../config/constants';
 
 export class BookingService {
   private readonly bookingRepository = new BookingRepository();
@@ -47,8 +48,8 @@ export class BookingService {
   getUserBookings = async (userId: string) => this.bookingRepository.findManyByUserId(userId);
 
   getManagerBookings = async (managerId: string, paginationOptions: any = {}) => {
-    const page = parseInt(paginationOptions.page) || 1;
-    const limit = paginationOptions.limit === 'all' ? 10000 : (parseInt(paginationOptions.limit) || 10);
+    const page = parseInt(paginationOptions.page) || PAGINATION.DEFAULT_PAGE;
+    const limit = paginationOptions.limit === 'all' ? PAGINATION.MAX_LIMIT : (parseInt(paginationOptions.limit) || PAGINATION.DEFAULT_LIMIT);
     const skip = paginationOptions.limit === 'all' ? 0 : (page - 1) * limit;
     const [bookings, totalBookings] = await this.bookingRepository.findManagerBookings(managerId, skip, limit);
 
