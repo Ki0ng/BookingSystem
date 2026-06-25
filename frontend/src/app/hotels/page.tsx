@@ -194,9 +194,41 @@ function HotelsList() {
 }
 
 
+const HotelsPageSkeleton = () => (
+  <div className="min-h-screen bg-[#fcfcfd] pb-32 pt-10">
+    <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row gap-12">
+      {/* Filters Sidebar Skeleton */}
+      <aside className="w-full lg:w-72 space-y-10">
+        <div className="space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="h-6 w-32 bg-slate-200 rounded-md animate-pulse" />
+            <div className="h-4 w-16 bg-slate-200 rounded-md animate-pulse" />
+          </div>
+          <div className="space-y-6">
+            <div className="h-20 bg-slate-100 rounded-3xl animate-pulse" />
+            <div className="h-32 bg-slate-100 rounded-3xl animate-pulse" />
+            <div className="h-40 bg-slate-100 rounded-3xl animate-pulse" />
+          </div>
+        </div>
+      </aside>
+
+      {/* Results Skeleton */}
+      <div className="flex-1 space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="h-8 w-64 bg-slate-200 rounded-md animate-pulse" />
+          <div className="h-10 w-40 bg-slate-200 rounded-md animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 gap-8">
+          {[1, 2, 3].map(i => <HotelListSkeleton key={i} />)}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function HotelsPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center font-black text-slate-400 animate-pulse">Initializing Discovery...</div>}>
+    <Suspense fallback={<HotelsPageSkeleton />}>
       <HotelsList />
     </Suspense>
   );

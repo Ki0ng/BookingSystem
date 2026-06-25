@@ -29,7 +29,7 @@ export class BookingService {
       }, transactionClient);
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-    socketService.emitToManager((booking.room as any).hotel.ownerId, 'new_booking', booking);
+    socketService.emitToManager(room.hotel.ownerId, 'new_booking', booking);
     return booking;
   };
 
@@ -59,8 +59,11 @@ export class BookingService {
   getBookingDetails = async (bookingId: string) => this.bookingRepository.findById(bookingId);
 
   cancelBooking = async (bookingId: string) => {
-    const booking = await this.bookingRepository.updateStatus(bookingId, 'CANCELLED');
-    socketService.emitToManager((booking.room as any).hotel.ownerId, 'booking_updated', booking);
-    return booking;
+    const bookingDetails = await this.bookingRepository.findById(bookingId);
+    if (!bookingDetails) throw new Error('Booking not found');
+    
+    const cancelledBooking = await this.bookingRepository.updateStatus(bookingId, 'CANCELLED');
+    socketService.emitToManager((bookingDetails.room as any).hotel.ownerId, 'booking_updated', cancelledBooking);
+    return cancelledBooking;
   };
 }

@@ -56,13 +56,10 @@ export class ReviewRepository {
     });
   }
 
-  async create(reviewData: Prisma.ReviewUncheckedCreateInput, transactionClient?: Prisma.TransactionClient): Promise<any> {
+  async create(reviewData: Prisma.ReviewUncheckedCreateInput, transactionClient?: Prisma.TransactionClient): Promise<Review> {
     const client = transactionClient || prisma;
     return client.review.create({
-      data: reviewData,
-      include: {
-        user: { select: { id: true, name: true, avatar: true } }
-      }
+      data: reviewData
     });
   }
 
@@ -86,12 +83,11 @@ export class ReviewRepository {
     ]);
   }
 
-  async update(reviewId: string, reviewUpdateData: Prisma.ReviewUpdateInput, transactionClient?: Prisma.TransactionClient): Promise<any> {
+  async update(reviewId: string, reviewUpdateData: Prisma.ReviewUpdateInput, transactionClient?: Prisma.TransactionClient): Promise<Review> {
     const client = transactionClient || prisma;
     return client.review.update({
       where: { id: reviewId },
-      data: reviewUpdateData,
-      include: { user: true }
+      data: reviewUpdateData
     });
   }
 

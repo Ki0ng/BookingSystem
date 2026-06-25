@@ -26,20 +26,18 @@ export class HotelRepository {
     });
   }
 
-  async create(hotelData: Prisma.HotelUncheckedCreateInput, transactionClient?: Prisma.TransactionClient): Promise<any> {
+  async create(hotelData: Prisma.HotelUncheckedCreateInput, transactionClient?: Prisma.TransactionClient): Promise<Hotel> {
     const client = transactionClient || prisma;
     return client.hotel.create({
-      data: hotelData,
-      include: { images: true, amenities: true }
+      data: hotelData
     });
   }
 
-  async update(hotelId: string, hotelUpdateData: Prisma.HotelUpdateInput, transactionClient?: Prisma.TransactionClient): Promise<any> {
+  async update(hotelId: string, hotelUpdateData: Prisma.HotelUpdateInput, transactionClient?: Prisma.TransactionClient): Promise<Hotel> {
     const client = transactionClient || prisma;
     return client.hotel.update({
       where: { id: hotelId },
-      data: hotelUpdateData,
-      include: { images: true, amenities: true }
+      data: hotelUpdateData
     });
   }
 

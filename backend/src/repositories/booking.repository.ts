@@ -31,22 +31,17 @@ export class BookingRepository {
     });
   }
 
-  async create(bookingData: Prisma.BookingUncheckedCreateInput, transactionClient?: Prisma.TransactionClient): Promise<any> {
+  async create(bookingData: Prisma.BookingUncheckedCreateInput, transactionClient?: Prisma.TransactionClient): Promise<Booking> {
     const client = transactionClient || prisma;
     return client.booking.create({
-      data: bookingData,
-      include: {
-        room: { include: { hotel: true } },
-        user: { select: { name: true, email: true, avatar: true } }
-      }
+      data: bookingData
     });
   }
 
-  async updateStatus(bookingId: string, status: BookingStatus): Promise<any> {
+  async updateStatus(bookingId: string, status: BookingStatus): Promise<Booking> {
     return prisma.booking.update({
       where: { id: bookingId },
-      data: { status },
-      include: { room: { include: { hotel: true } } }
+      data: { status }
     });
   }
 

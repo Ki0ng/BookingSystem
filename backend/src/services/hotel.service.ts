@@ -60,31 +60,63 @@ export class HotelService {
 
   private filterHotelsByAvailability = async (hotels: any[], checkIn: string, checkOut: string, flexibility: number) => {
     const flexibilityWindows = HotelUtils.generateFlexibilityWindows(new Date(checkIn), new Date(checkOut), flexibility);
+
+    // Collect all room IDs across all candidate hotels
+    const roomIds = hotels.flatMap(h => h.rooms.map((r: any) => r.id));
+    if (roomIds.length === 0) return [];
+
+    // Retrieve all bookings that overlap with any of the flexibility windows for these room IDs in one query
+    const overlappingBookings = await prisma.booking.findMany({
+      where: {
+        roomId: { in: roomIds },
+        status: { in: ['CONFIRMED', 'PENDING'] },
+        OR: flexibilityWindows.map(window => ({
+          checkIn: { lt: window.out },
+          checkOut: { gt: window.in }
+        }))
+      },
+      select: {
+        roomId: true,
+        checkIn: true,
+        checkOut: true
+      }
+    });
+
     const availableHotels: any[] = [];
 
     for (const hotel of hotels) {
-      if (await this.isHotelAvailableInWindows(hotel, flexibilityWindows)) {
+      let isHotelAvailable = false;
+
+      // A hotel is available if at least one window has an available room
+      for (const window of flexibilityWindows) {
+        let anyRoomAvailableInWindow = false;
+
+        for (const room of hotel.rooms) {
+          // Count overlapping bookings for this room and window in memory
+          const overlappingCount = overlappingBookings.filter(b =>
+            b.roomId === room.id &&
+            b.checkIn < window.out &&
+            b.checkOut > window.in
+          ).length;
+
+          if (room.quantity - overlappingCount > 0) {
+            anyRoomAvailableInWindow = true;
+            break; // Found an available room type for this window, no need to check other rooms
+          }
+        }
+
+        if (anyRoomAvailableInWindow) {
+          isHotelAvailable = true;
+          break; // Found a window in which the hotel is available, no need to check other windows
+        }
+      }
+
+      if (isHotelAvailable) {
         availableHotels.push(hotel);
       }
     }
+
     return availableHotels;
-  };
-
-  private isHotelAvailableInWindows = async (hotel: any, windows: { in: Date, out: Date }[]) => {
-    for (const window of windows) {
-      if (await this.isAnyRoomAvailable(hotel.rooms, window)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  private isAnyRoomAvailable = async (rooms: any[], window: { in: Date, out: Date }) => {
-    const roomAvailabilityResults = await Promise.all(rooms.map(async (room: any) => {
-      const overlappingBookingsCount = await this.bookingRepository.countOverlapping(room.id, window.in, window.out);
-      return (room.quantity - overlappingBookingsCount) > 0;
-    }));
-    return roomAvailabilityResults.some(isAvailable => isAvailable);
   };
 
   getHotelsByOwner = async (ownerId: string) => {

@@ -42,7 +42,47 @@ export default function MyBookingsPage() {
   };
 
 
-  if (loading) return <div className="p-20 text-center animate-pulse text-slate-400 font-bold uppercase tracking-widest text-xs">Accessing Reservation Archives...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#fcfcfd] pb-32">
+        <div className="max-w-5xl mx-auto px-4 pt-10">
+          <div className="flex items-center gap-4 mb-10">
+            <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+            <div>
+              <div className="h-8 w-48 bg-slate-200 rounded-md animate-pulse" />
+              <div className="h-4 w-32 bg-slate-200 rounded-md animate-pulse mt-2" />
+            </div>
+          </div>
+          <div className="space-y-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col md:flex-row h-72 animate-pulse w-full">
+                <div className="w-full md:w-72 h-48 md:h-auto bg-slate-200 shrink-0" />
+                <div className="flex-1 p-8 md:p-10 flex flex-col justify-between">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2 flex-1">
+                        <div className="h-7 bg-slate-200 rounded-lg w-3/4" />
+                        <div className="h-4 bg-slate-200 rounded-md w-1/2 mt-1" />
+                      </div>
+                      <div className="text-right space-y-2 shrink-0 ml-4">
+                        <div className="h-3 bg-slate-200 rounded w-12 ml-auto" />
+                        <div className="h-7 bg-slate-200 rounded-lg w-20 ml-auto" />
+                      </div>
+                    </div>
+                    <div className="h-20 bg-slate-50 rounded-[1.5rem] border border-slate-100" />
+                  </div>
+                  <div className="flex justify-between items-center border-t border-slate-100 pt-6 mt-4">
+                    <div className="h-4 bg-slate-200 rounded w-28" />
+                    <div className="h-10 bg-slate-200 rounded-xl w-32" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#fcfcfd] pb-32">
