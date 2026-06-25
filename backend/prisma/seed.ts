@@ -46,6 +46,28 @@ async function main() {
     return user;
   };
 
+  const getOrCreateUserByName = async (name: string, email: string, defaultRole: Role) => {
+    let user = await prisma.user.findFirst({ where: { name } });
+    if (!user) {
+      user = await prisma.user.findUnique({ where: { email } });
+    }
+    if (!user) {
+      console.log(`👤 User with name "${name}" not found, creating as fallback...`);
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          phone: '0987654321',
+          password_hash: hashedPassword,
+          role: defaultRole,
+        }
+      });
+    } else {
+      console.log(`👤 Found existing user: "${user.name}" (${user.email}) (Preserved)`);
+    }
+    return user;
+  };
+
   const admin = await getOrCreateUser('admin@elitebooking.com', {
     name: 'Nguyễn Lâm Phong (Admin)',
     phone: '0901234567',
@@ -102,29 +124,49 @@ async function main() {
     role: Role.USER,
   });
 
+  // Retrieving the specific testing accounts
+  const adminKinK = await getOrCreateUserByName('Kin K', 'kink@elitebooking.com', Role.ADMIN);
+  const userToanLe = await getOrCreateUserByName('Toàn Lê', 'toanle@gmail.com', Role.USER);
+  const partnerToanT = await getOrCreateUserByName('Toàn T', 'toant@elitebooking.com', Role.MANAGER);
+
   // 4. Create Manager Applications (Realistic data matching user status)
   console.log('📝 Creating manager applications...');
   await prisma.managerApplication.create({
     data: {
       userId: managerDanang.id,
-      hotelName: 'Hội An Ancient House Resort & Spa',
-      hotelAddress: '377 Cửa Đại, Cẩm Châu, Hội An, Quảng Nam',
-      hotelDescription: 'Nằm giữa không gian làng quê mộc mạc của Hội An cổ kính, giữ nguyên thiết kế nhà cổ thuần Việt mái ngói rêu phong kết hợp tiện nghi cao cấp.',
-      businessLicense: 'https://res.cloudinary.com/elite-booking/image/upload/v1719281002/licenses/hoian_ancient_license.jpg',
+      hotelName: 'InterContinental Danang Sun Peninsula Resort',
+      hotelAddress: 'Bán đảo Sơn Trà, Quận Sơn Trà, Đà Nẵng',
+      hotelDescription: 'Tọa lạc tại bán đảo Sơn Trà thơ mộng, khu nghỉ dưỡng siêu sang mang kiến trúc độc đáo.',
+      businessLicense: 'https://res.cloudinary.com/elite-booking/image/upload/v1719281000/licenses/danang_license.jpg',
       phone: managerDanang.phone || '0912345678',
       status: ApplicationStatus.APPROVED,
       adminComment: 'Giấy chứng nhận an toàn PCCC & GPKD đầy đủ.',
     }
   });
 
+  // Assign application to managerHanoi (Nguyễn Tuyết Mai)
   await prisma.managerApplication.create({
     data: {
       userId: managerHanoi.id,
+      hotelName: 'Sofitel Legend Metropole Hanoi',
+      hotelAddress: '15 Ngô Quyền, Quận Hoàn Kiếm, Hà Nội',
+      hotelDescription: 'Được xây dựng từ năm 1901, Sofitel Legend Metropole là một kiệt tác lịch sử mang phong cách kiến trúc Pháp thuộc cổ kính giữa lòng thủ đô.',
+      businessLicense: 'https://res.cloudinary.com/elite-booking/image/upload/v1719281004/licenses/metropole_license.pdf',
+      phone: managerHanoi.phone || '0923456789',
+      status: ApplicationStatus.APPROVED,
+      adminComment: 'Giấy phép kinh doanh và chứng nhận xếp hạng 5 sao đầy đủ.',
+    }
+  });
+
+  // Assign application to partnerToanT (Toàn T)
+  await prisma.managerApplication.create({
+    data: {
+      userId: partnerToanT.id,
       hotelName: 'Grand Plaza Resort Hanoi',
       hotelAddress: '117 Trần Duy Hưng, Trung Hòa, Cầu Giấy, Hà Nội',
       hotelDescription: 'Khách sạn dát vàng 5 sao đầu tiên tại Hà Nội, mang đậm phong cách hoàng gia Châu Âu cổ điển và sang trọng vượt bậc.',
       businessLicense: 'https://res.cloudinary.com/elite-booking/image/upload/v1719281001/licenses/grand_plaza_license.pdf',
-      phone: managerHanoi.phone || '0923456789',
+      phone: partnerToanT.phone || '0987654321',
       status: ApplicationStatus.APPROVED,
       adminComment: 'Hồ sơ đầy đủ, giấy phép kinh doanh hợp lệ.',
     }
@@ -146,7 +188,7 @@ async function main() {
   // 5. Create Hotels with Rooms, Amenities, and Images
   console.log('🏨 Creating hotels and rooms...');
 
-  // Hotel 1: InterContinental Danang Sun Peninsula Resort
+  // Hotel 1: InterContinental Danang Sun Peninsula Resort (owned by managerDanang)
   const hotel1 = await prisma.hotel.create({
     data: {
       name: 'InterContinental Danang Sun Peninsula Resort',
@@ -217,7 +259,7 @@ async function main() {
     }
   });
 
-  // Hotel 2: Sofitel Legend Metropole Hanoi
+  // Hotel 2: Sofitel Legend Metropole Hanoi (owned by managerHanoi)
   const hotel2 = await prisma.hotel.create({
     data: {
       name: 'Sofitel Legend Metropole Hanoi',
@@ -274,7 +316,7 @@ async function main() {
     }
   });
 
-  // Hotel 3: The Reverie Saigon
+  // Hotel 3: The Reverie Saigon (owned by managerSaigon)
   const hotel3 = await prisma.hotel.create({
     data: {
       name: 'The Reverie Saigon',
@@ -332,17 +374,17 @@ async function main() {
     }
   });
 
-  // Hotel 4: Grand Plaza Resort Hanoi
+  // Hotel 4: Grand Plaza Resort Hanoi (ASSIGNED to partnerToanT)
   const hotel4 = await prisma.hotel.create({
     data: {
       name: 'Grand Plaza Resort Hanoi',
-      ownerId: managerHanoi.id,
+      ownerId: partnerToanT.id,
       address: '117 Trần Duy Hưng, Trung Hòa, Cầu Giấy, Hà Nội',
       description: 'Khách sạn dát vàng 5 sao đầu tiên tại Hà Nội, mang đậm phong cách hoàng gia Châu Âu cổ điển và sang trọng vượt bậc.',
       location_lat: 21.0076,
       location_lng: 105.7972,
       average_rating: 5.0,
-      review_count: 1,
+      review_count: 2, // 2 reviews now
       status: ApplicationStatus.APPROVED,
       amenities: {
         connect: [
@@ -388,17 +430,17 @@ async function main() {
     }
   });
 
-  // Hotel 5: Hội An Ancient House Resort & Spa
+  // Hotel 5: Hội An Ancient House Resort & Spa (ASSIGNED to partnerToanT)
   const hotel5 = await prisma.hotel.create({
     data: {
       name: 'Hội An Ancient House Resort & Spa',
-      ownerId: managerDanang.id,
+      ownerId: partnerToanT.id,
       address: '377 Cửa Đại, Cẩm Châu, Hội An, Quảng Nam',
       description: 'Nằm giữa không gian làng quê mộc mạc của Hội An cổ kính, giữ nguyên thiết kế nhà cổ thuần Việt mái ngói rêu phong kết hợp tiện nghi cao cấp.',
       location_lat: 15.8824,
       location_lng: 108.3512,
       average_rating: 4.0,
-      review_count: 1,
+      review_count: 2, // 2 reviews now
       status: ApplicationStatus.APPROVED,
       amenities: {
         connect: [
@@ -453,7 +495,7 @@ async function main() {
   // 6. Create Reviews & Review Replies
   console.log('💬 Creating reviews and replies...');
 
-  // Reviews for Hotel 1
+  // Reviews for Hotel 1 (InterContinental Danang)
   const review1_1 = await prisma.review.create({
     data: {
       rating: 5,
@@ -482,7 +524,7 @@ async function main() {
     }
   });
 
-  // Reviews for Hotel 2
+  // Reviews for Hotel 2 (Sofitel Hanoi)
   const review2_1 = await prisma.review.create({
     data: {
       rating: 5,
@@ -511,7 +553,7 @@ async function main() {
     }
   });
 
-  // Reviews for Hotel 3
+  // Reviews for Hotel 3 (Reverie Saigon)
   await prisma.review.create({
     data: {
       rating: 5,
@@ -522,7 +564,7 @@ async function main() {
     }
   });
 
-  // Review for Hotel 4 (Grand Plaza)
+  // Reviews for Hotel 4 (Grand Plaza - owned by partnerToanT)
   const review4_1 = await prisma.review.create({
     data: {
       rating: 5,
@@ -533,15 +575,26 @@ async function main() {
     }
   });
 
+  // Review reply authored by Toàn T
   await prisma.reviewReply.create({
     data: {
       reviewId: review4_1.id,
-      managerId: managerHanoi.id,
-      message: 'Rất cảm ơn chị Mai đã tin tưởng lựa chọn Grand Plaza Resort Hanoi cho kỳ nghỉ của mình. Sự hài lòng của quý khách là động lực lớn nhất để đội ngũ của chúng tôi hoàn thiện dịch vụ mỗi ngày.',
+      managerId: partnerToanT.id,
+      message: 'Rất cảm ơn chị Mai đã tin tưởng lựa chọn Grand Plaza Resort Hanoi cho kỳ nghỉ của mình. Sự hài lòng của quý khách là động lực lớn nhất để đội ngũ Toàn T chúng tôi hoàn thiện dịch vụ mỗi ngày.',
     }
   });
 
-  // Review for Hotel 5 (Hội An Ancient House)
+  const review4_2 = await prisma.review.create({
+    data: {
+      rating: 5,
+      comment: 'Quá sang trọng và đẳng cấp, dịch vụ dát vàng đỉnh cao ở Hà Nội.',
+      userId: userToanLe.id,
+      hotelId: hotel4.id,
+      status: ReviewStatus.PENDING, // PENDING review for Toàn T to moderating/answering!
+    }
+  });
+
+  // Reviews for Hotel 5 (Hội An Ancient House - owned by partnerToanT)
   const review5_1 = await prisma.review.create({
     data: {
       rating: 4,
@@ -552,22 +605,23 @@ async function main() {
     }
   });
 
+  // Review reply authored by Toàn T
   await prisma.reviewReply.create({
     data: {
       reviewId: review5_1.id,
-      managerId: managerDanang.id,
-      message: 'Cảm ơn anh Hùng đã phản hồi rất chân thực về trải nghiệm của mình. Khách sạn đã ghi nhận ý kiến và đã trang bị sẵn lọ xịt tinh dầu chống muỗi thảo mộc trong tủ đồ của mỗi phòng từ hôm nay.',
+      managerId: partnerToanT.id,
+      message: 'Cảm ơn anh Hùng đã phản hồi rất chân thực về trải nghiệm của mình. Khách sạn của Toàn T đã ghi nhận ý kiến và trang bị sẵn lọ xịt tinh dầu chống muỗi thảo mộc trong tủ đồ của mỗi phòng từ hôm nay.',
     }
   });
 
-  // 7. Create Bookings, Transactions & Notifications
+  // 7. Create Bookings, Transactions & Notifications (with staggered dates to populate charts!)
   console.log('📅 Creating bookings, transactions, and notifications...');
 
-  // Booking 1: Past completed booking (InterContinental Danang)
-  const checkIn1 = new Date();
-  checkIn1.setDate(checkIn1.getDate() - 10);
-  const checkOut1 = new Date();
-  checkOut1.setDate(checkOut1.getDate() - 7);
+  // Booking 1: Past completed booking (InterContinental Danang) - 6 days ago
+  const date6DaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
+  const checkIn1 = new Date(date6DaysAgo);
+  const checkOut1 = new Date(date6DaysAgo);
+  checkOut1.setDate(checkOut1.getDate() + 3);
 
   await prisma.booking.create({
     data: {
@@ -575,13 +629,15 @@ async function main() {
       roomId: roomsHotel1[0].id,
       checkIn: checkIn1,
       checkOut: checkOut1,
-      totalPrice: roomsHotel1[0].base_price * 3,
+      totalPrice: roomsHotel1[0].base_price * 3, // $750
       status: BookingStatus.CONFIRMED,
+      createdAt: date6DaysAgo,
       transactions: {
         create: {
           amount: roomsHotel1[0].base_price * 3,
           status: TransactionStatus.SUCCESS,
           payment_gateway_ref: 'PAY-VN-19827364-METROPOLIS',
+          createdAt: date6DaysAgo,
         }
       }
     }
@@ -593,14 +649,15 @@ async function main() {
       title: 'Đặt phòng thành công',
       message: `Đơn đặt phòng ${roomsHotel1[0].room_type} tại InterContinental Danang đã được xác nhận.`,
       type: 'SUCCESS',
+      createdAt: date6DaysAgo,
     }
   });
 
-  // Booking 2: Future confirmed booking (Sofitel Hanoi)
-  const checkIn2 = new Date();
-  checkIn2.setDate(checkIn2.getDate() + 5);
-  const checkOut2 = new Date();
-  checkOut2.setDate(checkOut2.getDate() + 7);
+  // Booking 2: Past confirmed booking (Sofitel Hanoi) - 4 days ago
+  const date4DaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
+  const checkIn2 = new Date(date4DaysAgo);
+  const checkOut2 = new Date(date4DaysAgo);
+  checkOut2.setDate(checkOut2.getDate() + 2);
 
   await prisma.booking.create({
     data: {
@@ -608,13 +665,15 @@ async function main() {
       roomId: roomsHotel2[0].id,
       checkIn: checkIn2,
       checkOut: checkOut2,
-      totalPrice: roomsHotel2[0].base_price * 2,
+      totalPrice: roomsHotel2[0].base_price * 2, // $360
       status: BookingStatus.CONFIRMED,
+      createdAt: date4DaysAgo,
       transactions: {
         create: {
           amount: roomsHotel2[0].base_price * 2,
           status: TransactionStatus.SUCCESS,
           payment_gateway_ref: 'PAY-VN-90812739-METROPOLIS',
+          createdAt: date4DaysAgo,
         }
       }
     }
@@ -626,10 +685,12 @@ async function main() {
       title: 'Xác nhận đặt phòng',
       message: `Đơn đặt phòng ${roomsHotel2[0].room_type} tại Sofitel Legend Metropole Hanoi từ ngày ${checkIn2.toLocaleDateString('vi-VN')} đã thanh toán thành công.`,
       type: 'SUCCESS',
+      createdAt: date4DaysAgo,
     }
   });
 
-  // Booking 3: Pending booking (The Reverie Saigon)
+  // Booking 3: Pending future booking (The Reverie Saigon) - 3 days ago
+  const date3DaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
   const checkIn3 = new Date();
   checkIn3.setDate(checkIn3.getDate() + 15);
   const checkOut3 = new Date();
@@ -643,10 +704,12 @@ async function main() {
       checkOut: checkOut3,
       totalPrice: roomsHotel3[0].base_price * 3,
       status: BookingStatus.PENDING,
+      createdAt: date3DaysAgo,
       transactions: {
         create: {
           amount: roomsHotel3[0].base_price * 3,
           status: TransactionStatus.PENDING,
+          createdAt: date3DaysAgo,
         }
       }
     }
@@ -658,14 +721,15 @@ async function main() {
       title: 'Đơn đặt phòng đang chờ thanh toán',
       message: `Vui lòng thanh toán đơn đặt phòng ${roomsHotel3[0].room_type} tại The Reverie Saigon để hoàn tất giao dịch.`,
       type: 'WARNING',
+      createdAt: date3DaysAgo,
     }
   });
 
-  // Booking 4: Cancelled booking (Grand Plaza Resort)
-  const checkIn4 = new Date();
-  checkIn4.setDate(checkIn4.getDate() - 2);
-  const checkOut4 = new Date();
-  checkOut4.setDate(checkOut4.getDate() + 2);
+  // Booking 4: Cancelled booking (Grand Plaza Resort - owned by Toàn T) - 2 days ago
+  const date2DaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  const checkIn4 = new Date(date2DaysAgo);
+  const checkOut4 = new Date(date2DaysAgo);
+  checkOut4.setDate(checkOut4.getDate() + 4);
 
   await prisma.booking.create({
     data: {
@@ -675,10 +739,12 @@ async function main() {
       checkOut: checkOut4,
       totalPrice: roomsHotel4[1].base_price * 4,
       status: BookingStatus.CANCELLED,
+      createdAt: date2DaysAgo,
       transactions: {
         create: {
           amount: roomsHotel4[1].base_price * 4,
           status: TransactionStatus.FAILED,
+          createdAt: date2DaysAgo,
         }
       }
     }
@@ -690,10 +756,12 @@ async function main() {
       title: 'Đơn đặt phòng đã hủy',
       message: `Đơn đặt phòng ${roomsHotel4[1].room_type} tại Grand Plaza Resort Hanoi đã bị hủy do giao dịch không thành công.`,
       type: 'ERROR',
+      createdAt: date2DaysAgo,
     }
   });
 
-  // Booking 5: Future confirmed booking (Hội An Ancient House Garden view)
+  // Booking 5: Future confirmed booking (Hội An Ancient House - owned by Toàn T) - 1 day ago
+  const date1DayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
   const checkIn5 = new Date();
   checkIn5.setDate(checkIn5.getDate() + 10);
   const checkOut5 = new Date();
@@ -705,13 +773,15 @@ async function main() {
       roomId: roomsHotel5[0].id,
       checkIn: checkIn5,
       checkOut: checkOut5,
-      totalPrice: roomsHotel5[0].base_price * 2,
+      totalPrice: roomsHotel5[0].base_price * 2, // $170.0
       status: BookingStatus.CONFIRMED,
+      createdAt: date1DayAgo,
       transactions: {
         create: {
           amount: roomsHotel5[0].base_price * 2,
           status: TransactionStatus.SUCCESS,
           payment_gateway_ref: 'VNPAY-20260710-98317',
+          createdAt: date1DayAgo,
         }
       }
     }
@@ -723,38 +793,62 @@ async function main() {
       title: 'Đặt phòng thành công',
       message: `Đơn đặt phòng ${roomsHotel5[0].room_type} tại Hội An Ancient House Resort & Spa từ ngày ${checkIn5.toLocaleDateString('vi-VN')} đã được xác nhận.`,
       type: 'SUCCESS',
+      createdAt: date1DayAgo,
+    }
+  });
+
+  // ADDITIONAL BOOKING 6 (Grand Plaza - owned by Toàn T) - 5 days ago (staggered for chart)
+  const date5DaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+  const checkIn6 = new Date(date5DaysAgo);
+  const checkOut6 = new Date(date5DaysAgo);
+  checkOut6.setDate(checkOut6.getDate() + 3);
+
+  await prisma.booking.create({
+    data: {
+      userId: customer2.id,
+      roomId: roomsHotel4[0].id, // Deluxe Gold Room ($150)
+      checkIn: checkIn6,
+      checkOut: checkOut6,
+      totalPrice: roomsHotel4[0].base_price * 3, // $450.0
+      status: BookingStatus.CONFIRMED,
+      createdAt: date5DaysAgo,
+      transactions: {
+        create: {
+          amount: roomsHotel4[0].base_price * 3,
+          status: TransactionStatus.SUCCESS,
+          payment_gateway_ref: 'VNPAY-20260620-66778',
+          createdAt: date5DaysAgo,
+        }
+      }
+    }
+  });
+
+  // ADDITIONAL BOOKING 7 (Hội An Ancient House - owned by Toàn T) - 3 days ago (staggered for chart)
+  const checkIn7 = new Date(date3DaysAgo);
+  const checkOut7 = new Date(date3DaysAgo);
+  checkOut7.setDate(checkOut7.getDate() + 2);
+
+  await prisma.booking.create({
+    data: {
+      userId: userToanLe.id, // Booked by Toàn Lê!
+      roomId: roomsHotel5[0].id, // Superior Ancient Garden View ($85)
+      checkIn: checkIn7,
+      checkOut: checkOut7,
+      totalPrice: roomsHotel5[0].base_price * 2, // $170.0
+      status: BookingStatus.CONFIRMED,
+      createdAt: date3DaysAgo,
+      transactions: {
+        create: {
+          amount: roomsHotel5[0].base_price * 2,
+          status: TransactionStatus.SUCCESS,
+          payment_gateway_ref: 'MOMO-20260622-44552',
+          createdAt: date3DaysAgo,
+        }
+      }
     }
   });
 
   // 8. Seed notifications for Kin K, Toàn Lê, Toàn T (preserving accounts if they exist)
-  console.log('👤 Finding or creating users for custom notifications (Kin K, Toàn Lê, Toàn T)...');
-  
-  const getOrCreateUserByName = async (name: string, email: string, defaultRole: Role) => {
-    let user = await prisma.user.findFirst({ where: { name } });
-    if (!user) {
-      user = await prisma.user.findUnique({ where: { email } });
-    }
-    if (!user) {
-      console.log(`👤 User with name "${name}" not found, creating as fallback...`);
-      user = await prisma.user.create({
-        data: {
-          name,
-          email,
-          phone: '0987654321',
-          password_hash: hashedPassword,
-          role: defaultRole,
-        }
-      });
-    } else {
-      console.log(`👤 Found existing user: "${user.name}" (${user.email})`);
-    }
-    return user;
-  };
-
-  const adminKinK = await getOrCreateUserByName('Kin K', 'kink@elitebooking.com', Role.ADMIN);
-  const userToanLe = await getOrCreateUserByName('Toàn Lê', 'toanle@gmail.com', Role.USER);
-  const partnerToanT = await getOrCreateUserByName('Toàn T', 'toant@elitebooking.com', Role.MANAGER);
-
   console.log('🔔 Seeding notifications for Kin K (Admin)...');
   await prisma.notification.createMany({
     data: [
