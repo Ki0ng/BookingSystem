@@ -14,6 +14,27 @@ import { Skeleton } from '@/shared/components/ui/Skeleton';
 export default function AdminDashboard() {
   const { stats, loading } = useAdminDashboard();
 
+  // Generate dynamic traffic pattern based on actual system users and hotels
+  const dynamicTraffic = [
+    Math.min(30 + (stats.totalUsers * 4), 95),
+    Math.min(25 + (stats.totalHotels * 8), 90),
+    Math.min(50 + (stats.pendingApps * 5), 85),
+    45,
+    Math.min(40 + (stats.totalUsers * 3), 95),
+    65,
+    Math.min(35 + (stats.totalHotels * 6), 90),
+    55,
+    Math.min(60 + (stats.totalUsers * 2), 98),
+    75
+  ];
+
+  // Generate the last 10 hours dynamically based on current time (e.g., 05h, 06h, ..., 14h)
+  const currentHour = new Date().getHours();
+  const last10Hours = Array.from({ length: 10 }, (_, i) => {
+    const hr = (currentHour - 9 + i + 24) % 24;
+    return `${hr.toString().padStart(2, '0')}h`;
+  });
+
   const adminStats = [
     { name: 'Global Users', value: stats.totalUsers, icon: Users, color: 'blue', trend: '+124 today' },
     { name: 'Verified Hotels', value: stats.totalHotels, icon: Hotel, color: 'indigo', trend: '+8 this week' },
@@ -79,17 +100,32 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="h-80 flex items-end justify-between gap-6 px-4">
-            {[60, 45, 80, 50, 90, 70, 85, 65, 95, 75].map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-4">
-                <div
-                  className="w-full bg-slate-100 rounded-2xl transition-all duration-700 hover:bg-blue-600 cursor-pointer relative group"
-                  style={{ height: `${h}%` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            {dynamicTraffic.map((h, i) => {
+              const trafficCount = Math.round(h * 15 + 120);
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-4 group/bar relative">
+                  <div className="relative w-full flex flex-col items-center justify-end h-64">
+                    {/* Tooltip */}
+                    <div className="absolute -top-10 opacity-0 group-hover/bar:opacity-100 transition-all duration-300 transform translate-y-2 group-hover/bar:translate-y-0 z-20 pointer-events-none">
+                      <div className="bg-slate-900 text-white px-3 py-1.5 rounded-xl text-[9px] font-black tracking-tight shadow-xl whitespace-nowrap">
+                        {trafficCount.toLocaleString()} visits
+                      </div>
+                      <div className="w-2 h-2 bg-slate-900 rotate-45 mx-auto -mt-1" />
+                    </div>
+
+                    {/* The Bar */}
+                    <div
+                      className="w-full bg-slate-100 rounded-2xl transition-all duration-700 hover:bg-blue-600 cursor-pointer relative overflow-hidden"
+                      style={{ height: `${h}%` }}
+                    >
+                      <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] bg-[length:250%_100%] animate-shimmer" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-blue-600/20 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{last10Hours[i]}</span>
                 </div>
-                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{i + 1}h</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

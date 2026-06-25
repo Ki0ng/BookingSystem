@@ -50,7 +50,58 @@ export default function AdminApplicationsPage() {
     }
   };
 
-  if (loading) return <div className="p-20 text-center animate-pulse text-slate-400 font-bold uppercase tracking-widest text-xs">Loading Applications...</div>;
+  if (loading) {
+    return (
+      <div className="space-y-10">
+        <div>
+          <div className="h-4 w-28 bg-slate-200 rounded-md animate-pulse mb-2" />
+          <div className="h-10 w-64 bg-slate-200 rounded-md animate-pulse" />
+        </div>
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Applicant</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hotel Details</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Business License</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {[1, 2, 3].map(i => (
+                <tr key={i} className="animate-pulse">
+                  <td className="p-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-200" />
+                      <div className="space-y-2 flex-1">
+                        <div className="h-5 bg-slate-200 rounded w-32" />
+                        <div className="h-3 bg-slate-200 rounded w-48 mt-1" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-8">
+                    <div className="space-y-2">
+                      <div className="h-5 bg-slate-200 rounded w-40" />
+                      <div className="h-3 bg-slate-200 rounded w-32 mt-1" />
+                    </div>
+                  </td>
+                  <td className="p-8">
+                    <div className="h-4 bg-slate-200 rounded w-48" />
+                  </td>
+                  <td className="p-8 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <div className="h-11 w-24 bg-slate-200 rounded-xl" />
+                      <div className="h-11 w-28 bg-slate-200 rounded-xl" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">

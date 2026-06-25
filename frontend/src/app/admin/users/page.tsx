@@ -37,7 +37,55 @@ export default function AdminUsersPage() {
     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div className="p-20 text-center animate-pulse text-slate-400 font-bold uppercase tracking-widest text-xs">Loading User Database...</div>;
+  if (loading) {
+    return (
+      <div className="space-y-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="h-4 w-28 bg-slate-200 rounded-md animate-pulse mb-2" />
+            <div className="h-10 w-48 bg-slate-200 rounded-md animate-pulse" />
+          </div>
+          <div className="h-16 w-full md:w-96 bg-slate-200 rounded-[2rem] animate-pulse" />
+        </div>
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">User Profile</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Role</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">Joined Date</th>
+                <th className="p-8 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {[1, 2, 3, 4].map(i => (
+                <tr key={i} className="animate-pulse">
+                  <td className="p-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-slate-200" />
+                      <div className="space-y-2 flex-1">
+                        <div className="h-5 bg-slate-200 rounded w-32" />
+                        <div className="h-3 bg-slate-200 rounded w-48 mt-1" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-8">
+                    <div className="h-7 w-20 bg-slate-200 rounded-full" />
+                  </td>
+                  <td className="p-8">
+                    <div className="h-5 w-24 bg-slate-200 rounded-md" />
+                  </td>
+                  <td className="p-8 text-right">
+                    <div className="h-6 w-16 bg-slate-200 rounded-full ml-auto" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">

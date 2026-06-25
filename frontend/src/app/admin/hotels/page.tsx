@@ -37,7 +37,53 @@ export default function AdminHotelsPage() {
     h.address?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <div className="p-20 text-center animate-pulse text-slate-400 font-bold uppercase tracking-widest text-xs">Loading Property Inventory...</div>;
+  if (loading) {
+    return (
+      <div className="space-y-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="h-4 w-28 bg-slate-200 rounded-md animate-pulse mb-2" />
+            <div className="h-10 w-48 bg-slate-200 rounded-md animate-pulse" />
+          </div>
+          <div className="h-16 w-full md:w-96 bg-slate-200 rounded-[2rem] animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 gap-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8 animate-pulse w-full">
+              <div className="flex flex-col md:flex-row items-center gap-8 flex-1">
+                <div className="w-32 h-32 rounded-[2rem] bg-slate-200 shrink-0" />
+                <div className="space-y-3 flex-1 w-full">
+                  <div className="h-7 bg-slate-200 rounded-lg w-1/2" />
+                  <div className="h-4 bg-slate-200 rounded-md w-3/4 mt-2" />
+                  <div className="flex items-center gap-6 pt-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-slate-200" />
+                      <div className="space-y-1">
+                        <div className="h-2 bg-slate-200 rounded w-16" />
+                        <div className="h-3 bg-slate-200 rounded w-20 mt-1" />
+                      </div>
+                    </div>
+                    <div className="w-px h-8 bg-slate-100" />
+                    <div className="space-y-1">
+                      <div className="h-2 bg-slate-200 rounded w-16" />
+                      <div className="h-3 bg-slate-200 rounded w-20 mt-1" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-8 shrink-0">
+                <div className="text-right space-y-2">
+                  <div className="h-3 bg-slate-200 rounded w-12 ml-auto" />
+                  <div className="h-6 bg-slate-200 rounded-full w-24 ml-auto mt-1" />
+                </div>
+                <div className="w-14 h-14 bg-slate-200 rounded-2xl animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">
