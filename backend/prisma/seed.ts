@@ -185,6 +185,32 @@ async function main() {
     }
   });
 
+  // Pending application 1: customer3 (Sapa Jade Hill Resort & Spa)
+  await prisma.managerApplication.create({
+    data: {
+      userId: customer3.id,
+      hotelName: 'Sapa Jade Hill Resort & Spa',
+      hotelAddress: 'Ngõ 447 Đường Mường Hoa, Sa Pa, Lào Cai',
+      hotelDescription: 'Khu nghỉ dưỡng núi độc đáo nằm sát thung lũng Mường Hoa thơ mộng.',
+      businessLicense: 'https://res.cloudinary.com/elite-booking/image/upload/v1719281005/licenses/sapa_jade_license.png',
+      phone: '0967890123',
+      status: ApplicationStatus.PENDING,
+    }
+  });
+
+  // Pending application 2: customer4 (Hạ Long Bay Cruise Resort)
+  await prisma.managerApplication.create({
+    data: {
+      userId: customer4.id,
+      hotelName: 'Hạ Long Bay Cruise Resort',
+      hotelAddress: 'Cảng tàu quốc tế Hạ Long, Bãi Cháy, Hạ Long',
+      hotelDescription: 'Du thuyền nghỉ dưỡng 5 sao sang trọng bậc nhất Vịnh Hạ Long.',
+      businessLicense: 'https://res.cloudinary.com/elite-booking/image/upload/v1719281006/licenses/halong_cruise_license.pdf',
+      phone: '0978901234',
+      status: ApplicationStatus.PENDING,
+    }
+  });
+
   // 5. Create Hotels with Rooms, Amenities, and Images
   console.log('🏨 Creating hotels and rooms...');
 
